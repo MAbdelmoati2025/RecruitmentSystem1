@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - نظام الموظفين</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-page {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .welcome-page h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .welcome-page p {
+            font-size: 24px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .employee-info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: right;
+        }
+
+        .employee-info p {
+            font-size: 16px;
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            margin-top: 20px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+
+        .error {
+            background: #ffe5e5;
+            color: #d32f2f;
+            border: 1px solid #ffcdd2;
+        }
+
+        .success {
+            background: #e8f5e9;
+            color: #388e3c;
+            border: 1px solid #c8e6c9;
+        }
+
+        .loading {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+
+        .emoji {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .demo-info {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .demo-info strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginPage" class="container">
+        <h1>مرحباً بك! 👋</h1>
+        <p class="subtitle">نظام إدارة الموظفين</p>
+        
+        <div class="demo-info">
+            <strong>حسابات تجريبية:</strong>
+            Username: admin | Password: 123456<br>
+            Username: employee1 | Password: 123456
+        </div>
+
+        <div class="input-group">
+            <label for="username">اسم المستخدم</label>
+            <input type="text" id="username" placeholder="أدخل اسم المستخدم">
+        </div>
+
+        <div class="input-group">
+            <label for="password">كلمة المرور</label>
+            <input type="password" id="password" placeholder="أدخل كلمة المرور">
+        </div>
+
+        <button id="loginBtn" onclick="login()">دخول</button>
+        
+        <div class="message error" id="errorMsg"></div>
+        <div class="message success" id="successMsg"></div>
+        <div class="message loading" id="loadingMsg">جاري التحقق...</div>
+    </div>
+
+    <div id="welcomePage" class="welcome-page hidden">
+        <div class="emoji">🎉</div>
+        <h1>هاي!</h1>
+        <p>أهلاً يا <span id="displayName"></span></p>
+        
+        <div class="employee-info">
+            <p><strong>الاسم الكامل:</strong> <span id="fullName"></span></p>
+            <p><strong>الوظيفة:</strong> <span id="position"></span></p>
+            <p><strong>البريد الإلكتروني:</strong> <span id="email"></span></p>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let currentEmployee = null;
+
+        // التحقق عند تحميل الصفحة
+        window.onload = function() {
+            const savedEmployee = currentEmployee;
+            if (savedEmployee) {
+                showWelcomePage(savedEmployee);
+            }
+        };
+
+        function showMessage(type, text) {
+            const msgs = ['errorMsg', 'successMsg', 'loadingMsg'];
+            msgs.forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            
+            const msgElement = document.getElementById(type);
+            msgElement.textContent = text;
+            msgElement.style.display = 'block';
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const loginBtn = document.getElementById('loginBtn');
+            
+            // التحقق من الحقول
+            if (!username || !password) {
+                showMessage('errorMsg', 'الرجاء إدخال اسم المستخدم وكلمة المرور!');
+                return;
+            }
+
+            try {
+                // تعطيل الزر وإظهار رسالة التحميل
+                loginBtn.disabled = true;
+                showMessage('loadingMsg', 'جاري التحقق...');
+
+                // إرسال طلب تسجيل الدخول
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentEmployee = data.employee;
+                    showMessage('successMsg', 'تم تسجيل الدخول بنجاح!');
+                    
+                    // الانتقال لصفحة الترحيب بعد ثانية
+                    setTimeout(() => {
+                        showWelcomePage(data.employee);
+                    }, 1000);
+                } else {
+                    showMessage('errorMsg', data.message || 'فشل تسجيل الدخول!');
+                    loginBtn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error('خطأ:', error);
+                showMessage('errorMsg', 'حدث خطأ في الاتصال بالخادم. تأكد من تشغيل السيرفر!');
+                loginBtn.disabled = false;
+            }
+        }
+
+        function showWelcomePage(employee) {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('welcomePage').classList.remove('hidden');
+            document.getElementById('displayName').textContent = employee.fullName;
+            document.getElementById('fullName').textContent = employee.fullName;
+            document.getElementById('position').textContent = employee.position || 'غير محدد';
+            document.getElementById('email').textContent = employee.email || 'غير محدد';
+        }
+
+        function logout() {
+            currentEmployee = null;
+            document.getElementById('welcomePage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('loginBtn').disabled = false;
+            
+            const msgs = ['errorMsg', 'successMsg', 'loadingMsg'];
+            msgs.forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+        }
+
+        // السماح بالضغط على Enter لتسجيل الدخول
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
+            }
+        });
+
+        document.getElementById('username').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('password').focus();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// نموذج الموظف
+model Employee {
+  id          Int          @id @default(autoincrement())
+  username    String       @unique
+  password    String
+  fullName    String
+  email       String?      @unique
+  position    String?
+    phone       String?      // ← ضيفي هذا الحقل
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[] // المرشحين المعينين للموظف
+}
+
+// نموذج المدير
+model Manager {
+  id          Int          @id @default(autoincrement())
+  username    String       @unique
+  password    String
+  fullName    String
+    phone       String?      // ← ضيفي هذا الحقل
+
+  email       String?      @unique
+  position    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[] // المرشحين المعينين للمدير
+}
+
+// نموذج المرشح
+model Candidate {
+  id          Int          @id @default(autoincrement())
+  name        String
+  phone       String       @unique
+  age         Int?
+  address     String?
+  company     String?
+  position    String?
+  education   String?
+  uploadBatch String? // رقم الدفعة للرفع
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[] // التعيينات
+  callLogs    CallLog[] // سجل المكالمات
+
+  @@index([phone])
+  @@index([uploadBatch])
+}
+
+// نموذج التعيين
+model Assignment {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  candidateId Int
+  managerId   Int?
+  assignedAt  DateTime @default(now())  // ← استخدم assignedAt بدل createdAt
+  status      String   @default("pending")
+  notes       String?
+
+  employee  Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  manager   Manager?  @relation(fields: [managerId], references: [id])
+
+  @@unique([employeeId, candidateId])
+  @@index([employeeId])
+  @@index([candidateId])
+  @@index([managerId])
+  @@index([status])
+}
+
+// نموذج سجل المكالمات
+model CallLog {
+  id          Int       @id @default(autoincrement())
+  candidateId Int       // ← تأكد إن ده موجود
+  employeeId  Int
+  status      String    // contacted, not_answered, interested, not_interested, scheduled
+  notes       String?
+  calledAt    DateTime  @default(now())
+  
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@index([status])
+}
