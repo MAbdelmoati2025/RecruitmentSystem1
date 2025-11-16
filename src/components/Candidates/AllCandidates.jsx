@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Filter, Trash2, UserPlus, X } from 'lucide-react';
-import  API_URL  from '../../config/api';
+import React, { useState, useEffect } from 'react';
+import { Filter, Trash2, UserPlus, X, Loader2 } from 'lucide-react';
+import API_URL from '../../config/api';
 
 function AllCandidates({ candidates, filters, setFilters, onDelete, employees, assignments, onAssign }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -8,6 +8,26 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [assignCount, setAssignCount] = useState(10);
   const [assigning, setAssigning] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+
+  // Simulate loading effect with progress
+  useEffect(() => {
+    if (!loading) return;
+
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(progressInterval);
+          setTimeout(() => setLoading(false), 300);
+          return 100;
+        }
+        return prev + 2;
+      });
+    }, 30);
+
+    return () => clearInterval(progressInterval);
+  }, [loading]);
 
   // Filter candidates
   const filteredCandidates = candidates.filter(candidate => {
@@ -28,9 +48,7 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
     setFilters({ age: '', address: '', company: '', position: '', education: '' });
   };
 
-  // 🔥 Delete single candidate - FIXED
   const handleDeleteCandidate = async (candidateId) => {
-    // Validate ID
     const id = parseInt(candidateId);
     if (!id || isNaN(id)) {
       alert('❌ Invalid candidate ID');
@@ -41,7 +59,7 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
     if (!window.confirm('Are you sure you want to delete this candidate?')) return;
 
     try {
-      console.log('🗑️ Deleting candidate ID:', id); // Debug
+      console.log('🗑️ Deleting candidate ID:', id);
 
       const response = await fetch(`${API_URL}/candidates/${id}`, {
         method: 'DELETE'
@@ -61,7 +79,6 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
     }
   };
 
-  // 🔥 Delete all candidates
   const handleDeleteAllCandidates = async () => {
     if (!window.confirm('⚠️ Are you sure you want to delete ALL candidates? This action cannot be undone!')) return;
 
@@ -84,7 +101,6 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
     }
   };
 
-  // 🔥 Assign filtered candidates to employee
   const handleAssignFiltered = async () => {
     if (!selectedEmployee || assignCount === 0) return;
 
@@ -124,6 +140,93 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
       setAssigning(false);
     }
   };
+
+  // Loading Screen
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden ">
+        {/* Animated Background Shapes - Simplified */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Moving Circles */}
+          <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+          
+          {/* Floating Squares */}
+          <div className="absolute top-10 right-1/4 w-12 h-12 bg-blue-400/20 rotate-45 animate-bounce" style={{animationDuration: '3s'}}></div>
+          <div className="absolute bottom-10 left-1/4 w-16 h-16 bg-blue-400/20 rotate-12 animate-bounce" style={{animationDuration: '4s', animationDelay: '0.5s'}}></div>
+          
+          {/* Rotating Ring */}
+          <div className="absolute top-1/3 right-1/3 w-32 h-32 border-4 border-blue-400/20 rounded-full animate-spin" style={{animationDuration: '8s'}}></div>
+        </div>
+
+        <div className="text-center relative z-10 w-full max-w-md px-6">
+          {/* Animated Logo/Icon */}
+          <div className="relative mb-8">
+            <div className="w-40 h-40 mx-auto relative">
+              {/* Outer rotating ring */}
+              <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-spin" style={{animationDuration: '3s'}}></div>
+              
+              {/* Pulsing background */}
+              <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-ping"></div>
+              
+              {/* Main circle with percentage */}
+              <div className="relative bg-gradient-to-br from-blue-500 to-blue-700 rounded-full w-40 h-40 flex items-center justify-center border-4 border-white/20 shadow-2xl">
+                <div className="text-center">
+                  <div className="text-5xl font-black text-white mb-1">
+                    {progress}%
+                  </div>
+                  <div className="text-xs text-blue-100 font-bold">
+                    Loading
+                  </div>
+                </div>
+              </div>
+              
+              {/* Orbiting dot */}
+              <div className="absolute inset-0 animate-spin" style={{animationDuration: '2s'}}>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Loading Text */}
+          <h2 className="text-3xl font-black text-white mb-2">
+            Loading Candidates
+          </h2>
+          <p className="text-blue-200/70 text-lg mb-8">
+            Please wait while we prepare your data
+          </p>
+
+          {/* Progress Bar */}
+          <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden border border-white/20 mb-6">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+              style={{width: `${progress}%`}}
+            >
+              {progress > 10 && (
+                <span className="text-xs font-bold text-white">{progress}%</span>
+              )}
+            </div>
+          </div>
+
+          {/* Loading Status */}
+          <div className="space-y-2">
+            <div className={`flex items-center justify-between p-3 rounded-xl transition-all ${progress >= 33 ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 border border-white/10'}`}>
+              <span className="text-sm font-bold text-white">Connecting to database</span>
+              {progress >= 33 && <span className="text-blue-400">✓</span>}
+            </div>
+            <div className={`flex items-center justify-between p-3 rounded-xl transition-all ${progress >= 66 ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 border border-white/10'}`}>
+              <span className="text-sm font-bold text-white">Fetching candidates</span>
+              {progress >= 66 && <span className="text-blue-400">✓</span>}
+            </div>
+            <div className={`flex items-center justify-between p-3 rounded-xl transition-all ${progress >= 100 ? 'bg-blue-500/20 border border-blue-500/30' : 'bg-white/5 border border-white/10'}`}>
+              <span className="text-sm font-bold text-white">Preparing interface</span>
+              {progress >= 100 && <span className="text-blue-400">✓</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -289,11 +392,15 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
                 <select
                   value={selectedEmployee?.id || ''}
                   onChange={(e) => setSelectedEmployee(employees.find(emp => emp.id === parseInt(e.target.value)))}
-                  className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
                 >
                   <option value="">Choose an employee...</option>
                   {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                    <option
+                      key={emp.id}
+                      value={emp.id}
+                      style={{ backgroundColor: '#151c31ff', color: 'white' }}
+                    >{emp.fullName}</option>
                   ))}
                 </select>
               </div>

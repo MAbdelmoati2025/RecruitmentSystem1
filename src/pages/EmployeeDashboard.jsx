@@ -319,7 +319,8 @@ function EmployeeDashboard() {
             <div className="space-y-6">
               <div>
                 <h1 className="text-3xl font-black text-white mb-2">
-                  Welcome back, {employee?.fullName}! 👋
+                  Welcome back 👋
+                   {/* {employee?.fullName}!  */}
                 </h1>
                 <p className="text-blue-200/70">Here's your performance overview</p>
               </div>

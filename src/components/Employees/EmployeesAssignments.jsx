@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import  API_URL  from '../../config/api';
+import API_URL from '../../config/api';
 
 function EmployeesAssignments({ employees, candidates, assignments, onAssign }) {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -10,52 +10,52 @@ function EmployeesAssignments({ employees, candidates, assignments, onAssign }) 
     c => !assignments.some(a => a.candidateId === c.id)
   );
 
-const handleAssign = async () => {
-  if (!selectedEmployee || assignCount === 0) return;
+  const handleAssign = async () => {
+    if (!selectedEmployee || assignCount === 0) return;
 
-  setAssigning(true);
-  try {
-    const toAssign = unassignedCandidates.slice(0, assignCount);
-    
-    console.log('👤 Selected Employee:', selectedEmployee); // Debug
-    console.log('📋 Candidates to assign:', toAssign); // Debug
-    
-    const newAssignments = toAssign.map(c => ({
-      employeeId: selectedEmployee.id,
-      candidateId: c.id,
-      status: 'pending'
-    }));
+    setAssigning(true);
+    try {
+      const toAssign = unassignedCandidates.slice(0, assignCount);
 
-    console.log('📤 Sending assignments:', newAssignments); // Debug
+      console.log('👤 Selected Employee:', selectedEmployee); // Debug
+      console.log('📋 Candidates to assign:', toAssign); // Debug
 
-    const response = await fetch(`${API_URL}/assignments/bulk`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ assignments: newAssignments })
-    });
+      const newAssignments = toAssign.map(c => ({
+        employeeId: selectedEmployee.id,
+        candidateId: c.id,
+        status: 'pending'
+      }));
 
-    const data = await response.json();
-    
-    console.log('📥 Server response:', data); // Debug
+      console.log('📤 Sending assignments:', newAssignments); // Debug
 
-    if (data.success) {
-      onAssign([...assignments, ...newAssignments]);
-      setSelectedEmployee(null);
-      setAssignCount(10);
-      alert(`✅ Successfully assigned ${data.count} candidates`);
-    } else {
-      alert(`❌ Error: ${data.message}`);
+      const response = await fetch(`${API_URL}/assignments/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ assignments: newAssignments })
+      });
+
+      const data = await response.json();
+
+      console.log('📥 Server response:', data); // Debug
+
+      if (data.success) {
+        onAssign([...assignments, ...newAssignments]);
+        setSelectedEmployee(null);
+        setAssignCount(10);
+        alert(`✅ Successfully assigned ${data.count} candidates`);
+      } else {
+        alert(`❌ Error: ${data.message}`);
+      }
+
+    } catch (error) {
+      console.error('❌ Assignment error:', error);
+      alert(`❌ An error occurred: ${error.message}`);
+    } finally {
+      setAssigning(false);
     }
-
-  } catch (error) {
-    console.error('❌ Assignment error:', error);
-    alert(`❌ An error occurred: ${error.message}`);
-  } finally {
-    setAssigning(false);
-  }
-};
+  };
 
   return (
     <div className="space-y-6">
@@ -88,14 +88,37 @@ const handleAssign = async () => {
               <label className="block text-sm font-bold text-white mb-2">Select Employee</label>
               <select
                 value={selectedEmployee?.id || ''}
-                onChange={(e) => setSelectedEmployee(employees.find(emp => emp.id === parseInt(e.target.value)))}
-                className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:outline-none focus:border-blue-500"
+                onChange={(e) =>
+                  setSelectedEmployee(
+                    employees.find(emp => emp.id === parseInt(e.target.value))
+                  )
+                }
+                className="
+    w-full px-4 py-3 
+    bg-white/10 backdrop-blur-xl 
+    border border-white/20 
+    rounded-xl text-white 
+    focus:outline-none focus:border-blue-500
+  "
               >
-                <option value="">Choose an employee...</option>
+                <option
+                  value=""
+                  style={{ backgroundColor: '#1e293b', color: 'white' }}
+                >
+                  Choose an employee...
+                </option>
+
                 {employees.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                  <option
+                    key={emp.id}
+                    value={emp.id}
+                    style={{ backgroundColor: '#151c31ff', color: 'white' }}
+                  >
+                    {emp.fullName}
+                  </option>
                 ))}
               </select>
+
             </div>
 
             <div>

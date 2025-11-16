@@ -1,32 +1,52 @@
 import { useState, useEffect } from 'react';
 import {
-  FileText,
-  Download,
-  User,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Calendar,
-  Filter,
-  Search,
-  FileSpreadsheet,
-  RefreshCw,
-  Eye,
-  X,
-  Phone,
-  Mail,
-  Building,
-  Briefcase,
-  MapPin
+    FileText, Download, User, TrendingUp, CheckCircle, Clock,
+    AlertCircle, Calendar, Filter, Search, FileSpreadsheet,
+    RefreshCw, Eye, X, Phone, Mail, Building, Briefcase, MapPin
 } from 'lucide-react';
 
-// ✅ الطريقة الصحيحة 100%
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import API_URL from '../../config/api';
+
+// Helper function to transliterate Arabic to Latin for PDF
+const arabicToLatin = (text) => {
+    if (!text) return '';
+
+    const arabicToLatinMap = {
+        'ا': 'a', 'أ': 'a', 'إ': 'i', 'آ': 'aa',
+        'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j',
+        'ح': 'h', 'خ': 'kh', 'د': 'd', 'ذ': 'th',
+        'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh',
+        'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z',
+        'ع': 'a', 'غ': 'gh', 'ف': 'f', 'ق': 'q',
+        'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+        'ه': 'h', 'و': 'w', 'ي': 'y', 'ى': 'a',
+        'ة': 'h', 'ء': 'a',
+        // Add numbers
+        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9'
+    };
+
+    // Check if text contains Arabic
+    if (!/[\u0600-\u06FF]/.test(text)) {
+        return text; // Return as-is if no Arabic
+    }
+
+    // Keep original text in parentheses for reference
+    let transliterated = '';
+    for (let char of text) {
+        transliterated += arabicToLatinMap[char] || char;
+    }
+
+    return transliterated;
+};
+
+// Better approach: Keep Arabic as-is and let Excel handle it properly
+const processArabicText = (text) => {
+    return text || '';
+};
 
 function ReportsPage() {
     const [employees, setEmployees] = useState([]);
@@ -48,6 +68,7 @@ function ReportsPage() {
     }, [employees, assignments, searchTerm, dateFilter, statusFilter]);
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const [employeesRes, assignmentsRes] = await Promise.all([
                 fetch(`${API_URL}/employees`),
@@ -70,7 +91,6 @@ function ReportsPage() {
     const generateReportData = () => {
         let filteredAssignments = [...assignments];
 
-        // Date filter
         if (dateFilter !== 'all') {
             const now = new Date();
             const filterDate = new Date();
@@ -92,14 +112,12 @@ function ReportsPage() {
             );
         }
 
-        // Status filter
         if (statusFilter !== 'all') {
             filteredAssignments = filteredAssignments.filter(a =>
                 a.status === statusFilter
             );
         }
 
-        // Generate report for each employee
         const reports = employees.map(employee => {
             const employeeAssignments = filteredAssignments.filter(
                 a => a.employeeId === employee.id
@@ -122,308 +140,342 @@ function ReportsPage() {
             };
         });
 
-        // Search filter
         const filtered = searchTerm
-            ? reports.filter(r =>
-                r.employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                r.employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-            )
+            ? reports.filter(r => {
+                const searchLower = searchTerm.toLowerCase().trim();
+                const fullName = (r.employee.fullName || '').toLowerCase();
+                const email = (r.employee.email || '').toLowerCase();
+                const position = (r.employee.position || '').toLowerCase();
+                const department = (r.employee.department || '').toLowerCase();
+                const phone = (r.employee.phone || '').toLowerCase();
+
+                return fullName.includes(searchLower) ||
+                    email.includes(searchLower) ||
+                    position.includes(searchLower) ||
+                    department.includes(searchLower) ||
+                    phone.includes(searchLower);
+            })
             : reports;
 
         setReportData(filtered);
     };
 
-const exportEmployeePDF = (report) => {
-  const doc = new jsPDF();
-  const employee = report.employee;
-  const stats = report.stats;
-  const assignments = report.assignments;
+    const exportEmployeePDF = (report) => {
+        const doc = new jsPDF('p', 'mm', 'a4', true);
+        const employee = report.employee;
+        const stats = report.stats;
+        const assignments = report.assignments;
 
-  if (!employee) {
-    alert('❌ No employee data available');
-    return;
-  }
-
-  try {
-    // Header
-    doc.setFillColor(59, 130, 246);
-    doc.rect(0, 0, 210, 40, 'F');
-    
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text('Employee Performance Report', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 105, 30, { align: 'center' });
-
-    // Employee Info
-    doc.setTextColor(0, 0, 0);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(10, 50, 190, 50, 'F');
-    
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text('Employee Information', 15, 60);
-
-    doc.setFontSize(11);
-    doc.setFont(undefined, 'normal');
-    
-    doc.text(`Name: ${employee.fullName || 'N/A'}`, 15, 70);
-    doc.text(`Email: ${employee.email || 'N/A'}`, 15, 77);
-    doc.text(`Position: ${employee.position || 'N/A'}`, 15, 84);
-    doc.text(`Phone: ${employee.phone || 'N/A'}`, 15, 91);
-
-    // Statistics
-    let yPos = 115;
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text('Performance Statistics', 15, yPos);
-    
-    yPos += 10;
-    doc.setFillColor(59, 130, 246);
-    doc.rect(15, yPos, 45, 25, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.text((stats?.total || 0).toString(), 37.5, yPos + 13, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text('Total', 37.5, yPos + 20, { align: 'center' });
-
-    doc.setFillColor(249, 115, 22);
-    doc.rect(65, yPos, 45, 25, 'F');
-    doc.setFontSize(20);
-    doc.text((stats?.pending || 0).toString(), 87.5, yPos + 13, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text('Pending', 87.5, yPos + 20, { align: 'center' });
-
-    doc.setFillColor(234, 179, 8);
-    doc.rect(115, yPos, 45, 25, 'F');
-    doc.setFontSize(20);
-    doc.text((stats?.inProgress || 0).toString(), 137.5, yPos + 13, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text('In Progress', 137.5, yPos + 20, { align: 'center' });
-
-    doc.setFillColor(34, 197, 94);
-    doc.rect(165, yPos, 35, 25, 'F');
-    doc.setFontSize(20);
-    doc.text((stats?.completed || 0).toString(), 182.5, yPos + 13, { align: 'center' });
-    doc.setFontSize(9);
-    doc.text('Completed', 182.5, yPos + 20, { align: 'center' });
-
-    // Completion Rate
-    yPos += 35;
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Completion Rate: ${stats?.completionRate || 0}%`, 15, yPos);
-
-    // Progress bar
-    yPos += 5;
-    doc.setDrawColor(200);
-    doc.setFillColor(240, 240, 240);
-    doc.rect(15, yPos, 180, 8, 'FD');
-    
-    const progressWidth = (180 * (stats?.completionRate || 0)) / 100;
-    const rate = stats?.completionRate || 0;
-    if (rate >= 80) doc.setFillColor(34, 197, 94);
-    else if (rate >= 50) doc.setFillColor(234, 179, 8);
-    else doc.setFillColor(239, 68, 68);
-    
-    if (progressWidth > 0) {
-      doc.rect(15, yPos, progressWidth, 8, 'F');
-    }
-
-    // Assignments Details (Manual Table)
-    yPos += 20;
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text('Assignment Details', 15, yPos);
-    
-    yPos += 10;
-
-    if (assignments && assignments.length > 0) {
-      // Table Header
-      doc.setFillColor(59, 130, 246);
-      doc.rect(10, yPos, 190, 10, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'bold');
-      doc.text('#', 15, yPos + 7);
-      doc.text('Name', 25, yPos + 7);
-      doc.text('Phone', 65, yPos + 7);
-      doc.text('Company', 100, yPos + 7);
-      doc.text('Position', 140, yPos + 7);
-      doc.text('Status', 175, yPos + 7);
-
-      yPos += 10;
-
-      // Table Body
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(8);
-
-      assignments.forEach((a, index) => {
-        // Check if need new page
-        if (yPos > 270) {
-          doc.addPage();
-          yPos = 20;
+        if (!employee) {
+            alert('❌ No employee data available');
+            return;
         }
 
-        // Zebra striping
-        if (index % 2 === 0) {
-          doc.setFillColor(245, 245, 245);
-          doc.rect(10, yPos, 190, 8, 'F');
+        try {
+            // Load Arabic font from Google Fonts
+            doc.addFont('https://fonts.gstatic.com/s/amiri/v27/J7aRnpd8CGxBHqUpvrIw74NL.woff2', 'Amiri', 'normal');
+            doc.setFont('Amiri', 'normal');
+
+            // Header
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 0, 210, 40, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Employee Performance Report', 105, 20, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.text(`Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`, 105, 30, { align: 'center' });
+
+            // Employee Info
+            doc.setTextColor(0, 0, 0);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(10, 50, 190, 50, 'F');
+
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Employee Information', 15, 60);
+
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
+
+            // Process Arabic text for PDF
+            const nameText = arabicToLatin(employee.fullName || 'N/A');
+            const positionText = arabicToLatin(employee.position || 'N/A');
+
+            doc.text(`Name: ${nameText}`, 15, 70, { align: 'left' });
+            doc.text(`Email: ${employee.email || 'N/A'}`, 15, 77);
+            doc.text(`Position: ${positionText}`, 15, 84, { align: 'left' });
+            doc.text(`Phone: ${employee.phone || 'N/A'}`, 15, 91);
+
+            // Statistics Boxes
+            let yPos = 115;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Performance Statistics', 15, yPos);
+
+            yPos += 10;
+
+            // Total
+            doc.setFillColor(59, 130, 246);
+            doc.rect(15, yPos, 45, 25, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.text((stats?.total || 0).toString(), 37.5, yPos + 13, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text('Total', 37.5, yPos + 20, { align: 'center' });
+
+            // Pending
+            doc.setFillColor(249, 115, 22);
+            doc.rect(65, yPos, 45, 25, 'F');
+            doc.setFontSize(20);
+            doc.text((stats?.pending || 0).toString(), 87.5, yPos + 13, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text('Pending', 87.5, yPos + 20, { align: 'center' });
+
+            // In Progress
+            doc.setFillColor(234, 179, 8);
+            doc.rect(115, yPos, 45, 25, 'F');
+            doc.setFontSize(20);
+            doc.text((stats?.inProgress || 0).toString(), 137.5, yPos + 13, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text('In Progress', 137.5, yPos + 20, { align: 'center' });
+
+            // Completed
+            doc.setFillColor(34, 197, 94);
+            doc.rect(165, yPos, 35, 25, 'F');
+            doc.setFontSize(20);
+            doc.text((stats?.completed || 0).toString(), 182.5, yPos + 13, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text('Completed', 182.5, yPos + 20, { align: 'center' });
+
+            // Completion Rate
+            yPos += 35;
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Completion Rate: ${stats?.completionRate || 0}%`, 15, yPos);
+
+            // Progress bar
+            yPos += 5;
+            doc.setDrawColor(200);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(15, yPos, 180, 8, 'FD');
+
+            const progressWidth = (180 * (stats?.completionRate || 0)) / 100;
+            const rate = stats?.completionRate || 0;
+            if (rate >= 80) doc.setFillColor(34, 197, 94);
+            else if (rate >= 50) doc.setFillColor(234, 179, 8);
+            else doc.setFillColor(239, 68, 68);
+
+            if (progressWidth > 0) {
+                doc.rect(15, yPos, progressWidth, 8, 'F');
+            }
+
+            // Assignments Table
+            yPos += 20;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Assignment Details', 15, yPos);
+
+            yPos += 10;
+
+            if (assignments && assignments.length > 0) {
+                // Use autoTable for better text handling
+                const tableData = assignments.map((a, index) => [
+                    (index + 1).toString(),
+                    arabicToLatin(a.candidate?.name || 'N/A'),
+                    a.candidate?.phone || 'N/A',
+                    arabicToLatin(a.candidate?.company || 'N/A'),
+                    arabicToLatin(a.candidate?.position || 'N/A'),
+                    a.status === 'completed' ? 'Completed' :
+                        a.status === 'in_progress' ? 'In Progress' : 'Pending'
+                ]);
+
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['No', 'Name', 'Phone', 'Company', 'Position', 'Status']],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: {
+                        fillColor: [59, 130, 246],
+                        textColor: 255,
+                        fontSize: 9,
+                        fontStyle: 'bold',
+                        halign: 'center'
+                    },
+                    bodyStyles: {
+                        fontSize: 8,
+                        textColor: [0, 0, 0]
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 10 },
+                        1: { halign: 'left', cellWidth: 35 },
+                        2: { halign: 'center', cellWidth: 30 },
+                        3: { halign: 'left', cellWidth: 35 },
+                        4: { halign: 'left', cellWidth: 30 },
+                        5: { halign: 'center', cellWidth: 25 }
+                    },
+                    margin: { left: 10, right: 10 }
+                });
+            } else {
+                doc.setTextColor(100, 100, 100);
+                doc.setFontSize(11);
+                doc.text('No assignments found for this employee.', 15, yPos + 10);
+            }
+
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.setFont('helvetica', 'normal');
+
+                const pageHeight = doc.internal.pageSize.getHeight();
+                doc.text(`Page ${i} of ${pageCount}`, 105, pageHeight - 10, { align: 'center' });
+                doc.text('Confidential Report', 15, pageHeight - 10);
+                doc.text('HR System', 195, pageHeight - 10, { align: 'right' });
+            }
+
+            const fileName = `${employee.fullName.replace(/\s+/g, '-')}-Report-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            alert('✅ PDF exported successfully!');
+
+        } catch (error) {
+            console.error('❌ PDF Error:', error);
+            alert(`❌ Error creating PDF: ${error.message}`);
         }
-
-        doc.text((index + 1).toString(), 15, yPos + 6);
-        doc.text((a.candidate?.name || 'N/A').substring(0, 15), 25, yPos + 6);
-        doc.text(a.candidate?.phone || 'N/A', 65, yPos + 6);
-        doc.text((a.candidate?.company || 'N/A').substring(0, 15), 100, yPos + 6);
-        doc.text((a.candidate?.position || 'N/A').substring(0, 12), 140, yPos + 6);
-        
-        // Status with color
-        const status = a.status === 'completed' ? 'Completed' : 
-                       a.status === 'in_progress' ? 'In Progress' : 'Pending';
-        if (a.status === 'completed') doc.setTextColor(34, 197, 94);
-        else if (a.status === 'in_progress') doc.setTextColor(234, 179, 8);
-        else doc.setTextColor(249, 115, 22);
-        
-        doc.text(status, 175, yPos + 6);
-        doc.setTextColor(0, 0, 0);
-
-        yPos += 8;
-      });
-    } else {
-      doc.setTextColor(100, 100, 100);
-      doc.setFontSize(11);
-      doc.text('No assignments found for this employee.', 15, yPos + 10);
-    }
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      
-      const pageHeight = doc.internal.pageSize.getHeight();
-      doc.text(`Page ${i} of ${pageCount}`, 105, pageHeight - 10, { align: 'center' });
-      doc.text('Confidential Report', 15, pageHeight - 10);
-      doc.text('HR System', 195, pageHeight - 10, { align: 'right' });
-    }
-
-    // Save
-    const fileName = `${employee.fullName.replace(/\s+/g, '-')}-Report-${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(fileName);
-    
-    console.log('✅ PDF saved successfully:', fileName);
-    alert('✅ PDF exported successfully!');
-    
-  } catch (error) {
-    console.error('❌ PDF Error:', error);
-    alert(`❌ Error creating PDF: ${error.message}`);
-  }
-};
-
-
-
+    };
 
     const exportAllPDF = () => {
-        const doc = new jsPDF();
+        try {
+            const doc = new jsPDF('p', 'mm', 'a4', true);
 
-        // Title Page
-        doc.setFillColor(59, 130, 246);
-        doc.rect(0, 0, 210, 297, 'F');
+            // Title Page
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 0, 210, 297, 'F');
 
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(32);
-        doc.setFont(undefined, 'bold');
-        doc.text('Complete Performance', 105, 120, { align: 'center' });
-        doc.text('Report', 105, 135, { align: 'center' });
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(32);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Complete Performance', 105, 120, { align: 'center' });
+            doc.text('Report', 105, 135, { align: 'center' });
 
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'normal');
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 160, { align: 'center' });
-        doc.text(`Total Employees: ${reportData.length}`, 105, 170, { align: 'center' });
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 160, { align: 'center' });
+            doc.text(`Total Employees: ${reportData.length}`, 105, 170, { align: 'center' });
 
-        // Add new page for summary
-        doc.addPage();
+            doc.addPage();
 
-        // Summary Statistics
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(20);
-        doc.setFont(undefined, 'bold');
-        doc.text('Overall Summary', 14, 20);
+            // Summary Statistics
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(20);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Overall Summary', 14, 20);
 
-        const totalStats = {
-            totalAssignments: reportData.reduce((sum, r) => sum + r.stats.total, 0),
-            totalCompleted: reportData.reduce((sum, r) => sum + r.stats.completed, 0),
-            totalInProgress: reportData.reduce((sum, r) => sum + r.stats.inProgress, 0),
-            totalPending: reportData.reduce((sum, r) => sum + r.stats.pending, 0),
-        };
-        totalStats.overallRate = totalStats.totalAssignments > 0
-            ? Math.round((totalStats.totalCompleted / totalStats.totalAssignments) * 100)
-            : 0;
+            const totalStats = {
+                totalAssignments: reportData.reduce((sum, r) => sum + r.stats.total, 0),
+                totalCompleted: reportData.reduce((sum, r) => sum + r.stats.completed, 0),
+                totalInProgress: reportData.reduce((sum, r) => sum + r.stats.inProgress, 0),
+                totalPending: reportData.reduce((sum, r) => sum + r.stats.pending, 0),
+            };
+            totalStats.overallRate = totalStats.totalAssignments > 0
+                ? Math.round((totalStats.totalCompleted / totalStats.totalAssignments) * 100)
+                : 0;
 
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'normal');
-        let yPos = 35;
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            let yPos = 35;
 
-        doc.text(`Total Employees: ${reportData.length}`, 14, yPos);
-        yPos += 8;
-        doc.text(`Total Assignments: ${totalStats.totalAssignments}`, 14, yPos);
-        yPos += 8;
-        doc.text(`Completed: ${totalStats.totalCompleted}`, 14, yPos);
-        yPos += 8;
-        doc.text(`In Progress: ${totalStats.totalInProgress}`, 14, yPos);
-        yPos += 8;
-        doc.text(`Pending: ${totalStats.totalPending}`, 14, yPos);
-        yPos += 8;
-        doc.text(`Overall Completion Rate: ${totalStats.overallRate}%`, 14, yPos);
+            doc.text(`Total Employees: ${reportData.length}`, 14, yPos);
+            yPos += 8;
+            doc.text(`Total Assignments: ${totalStats.totalAssignments}`, 14, yPos);
+            yPos += 8;
+            doc.text(`Completed: ${totalStats.totalCompleted}`, 14, yPos);
+            yPos += 8;
+            doc.text(`In Progress: ${totalStats.totalInProgress}`, 14, yPos);
+            yPos += 8;
+            doc.text(`Pending: ${totalStats.totalPending}`, 14, yPos);
+            yPos += 8;
+            doc.text(`Overall Completion Rate: ${totalStats.overallRate}%`, 14, yPos);
 
-        // Summary Table
-        yPos += 15;
-        const summaryTableData = reportData.map(r => [
-            r.employee.fullName,
-            r.employee.email,
-            r.stats.total,
-            r.stats.pending,
-            r.stats.inProgress,
-            r.stats.completed,
-            `${r.stats.completionRate}%`
-        ]);
+            // Employees Table using autoTable
+            yPos += 15;
 
-        doc.autoTable({
-            startY: yPos,
-            head: [['Employee', 'Email', 'Total', 'Pending', 'In Progress', 'Completed', 'Rate']],
-            body: summaryTableData,
-            theme: 'grid',
-            headStyles: {
-                fillColor: [59, 130, 246],
-                textColor: 255,
-                fontStyle: 'bold'
-            },
-            styles: {
-                fontSize: 9,
-                cellPadding: 3
-            },
-            columnStyles: {
-                0: { cellWidth: 35 },
-                1: { cellWidth: 45 },
-                2: { cellWidth: 15, halign: 'center' },
-                3: { cellWidth: 15, halign: 'center' },
-                4: { cellWidth: 20, halign: 'center' },
-                5: { cellWidth: 20, halign: 'center' },
-                6: { cellWidth: 15, halign: 'center' }
+            const tableData = reportData.map(r => [
+                arabicToLatin(r.employee.fullName || 'N/A'),
+                r.employee.email || 'N/A',
+                r.stats.total.toString(),
+                r.stats.pending.toString(),
+                r.stats.inProgress.toString(),
+                r.stats.completed.toString(),
+                `${r.stats.completionRate}%`
+            ]);
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Employee', 'Email', 'Total', 'Pending', 'Progress', 'Done', 'Rate']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: {
+                    fillColor: [59, 130, 246],
+                    textColor: 255,
+                    fontSize: 9,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    fontSize: 8,
+                    textColor: [0, 0, 0]
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                columnStyles: {
+                    0: { halign: 'left', cellWidth: 40 },
+                    1: { halign: 'left', cellWidth: 50 },
+                    2: { halign: 'center', cellWidth: 15 },
+                    3: { halign: 'center', cellWidth: 20 },
+                    4: { halign: 'center', cellWidth: 20 },
+                    5: { halign: 'center', cellWidth: 15 },
+                    6: { halign: 'center', cellWidth: 15 }
+                },
+                margin: { left: 10, right: 10 }
+            });
+
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.setFont('helvetica', 'normal');
+
+                const pageHeight = doc.internal.pageSize.getHeight();
+                doc.text(`Page ${i} of ${pageCount}`, 105, pageHeight - 10, { align: 'center' });
+                doc.text('Confidential Report', 15, pageHeight - 10);
+                doc.text('HR System', 195, pageHeight - 10, { align: 'right' });
             }
-        });
 
-        // Save
-        doc.save(`Complete-Performance-Report-${new Date().toISOString().split('T')[0]}.pdf`);
+            const fileName = `Complete-Performance-Report-${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(fileName);
+
+            alert('✅ Complete report PDF exported successfully!');
+
+        } catch (error) {
+            console.error('❌ PDF Error:', error);
+            alert(`❌ Error creating PDF: ${error.message}`);
+        }
     };
 
     const exportToExcel = () => {
-        // Summary Sheet
         const summaryData = reportData.map(r => ({
             'Employee Name': r.employee.fullName,
             'Email': r.employee.email,
@@ -437,7 +489,6 @@ const exportEmployeePDF = (report) => {
             'Completion Rate': `${r.stats.completionRate}%`
         }));
 
-        // Detailed Sheet with all candidate information
         const detailedData = [];
         reportData.forEach(r => {
             r.assignments.forEach(a => {
@@ -462,7 +513,6 @@ const exportEmployeePDF = (report) => {
             });
         });
 
-        // Statistics Sheet
         const statsData = reportData.map(r => ({
             'Employee Name': r.employee.fullName,
             'Total Assignments': r.stats.total,
@@ -474,22 +524,16 @@ const exportEmployeePDF = (report) => {
                 r.stats.completionRate >= 50 ? 'Good' : 'Needs Improvement'
         }));
 
-        // Create workbook
         const wb = XLSX.utils.book_new();
-
-        // Add Summary sheet
         const wsSummary = XLSX.utils.json_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, wsSummary, 'Employee Summary');
 
-        // Add Detailed sheet
         const wsDetailed = XLSX.utils.json_to_sheet(detailedData);
         XLSX.utils.book_append_sheet(wb, wsDetailed, 'Complete Details');
 
-        // Add Statistics sheet
         const wsStats = XLSX.utils.json_to_sheet(statsData);
         XLSX.utils.book_append_sheet(wb, wsStats, 'Statistics');
 
-        // Save
         XLSX.writeFile(wb, `Complete-Report-${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
@@ -521,7 +565,7 @@ const exportEmployeePDF = (report) => {
         : 0;
 
     return (
-        <div >
+        <div>
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
@@ -612,15 +656,30 @@ const exportEmployeePDF = (report) => {
 
                 {/* Filters */}
                 <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
+                    {searchTerm && (
+                        <div className="mb-4 flex items-center gap-2 text-sm">
+                            <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 border border-blue-500/50 rounded-lg text-blue-300">
+                                <Search size={16} />
+                                <span>البحث النشط | Active Search: "{searchTerm}"</span>
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="ml-2 hover:text-white transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="relative">
                             <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/50" />
                             <input
                                 type="text"
-                                placeholder="Search employee name or email..."
+                                placeholder="ابحث باسم الموظف، الايميل، الوظيفة... | Search by name, email, position..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
+                                style={{ direction: 'ltr', textAlign: 'left' }}
                             />
                         </div>
 
@@ -664,30 +723,14 @@ const exportEmployeePDF = (report) => {
                         <table className="w-full">
                             <thead className="bg-white/5 border-b border-white/20">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-sm font-black text-white">
-                                        Employee
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Total
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Pending
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        In Progress
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Completed
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Rate
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Performance
-                                    </th>
-                                    <th className="px-6 py-4 text-center text-sm font-black text-white">
-                                        Actions
-                                    </th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Employee</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Total</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Pending</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">In Progress</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Completed</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Rate</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Performance</th>
+                                    <th className="px-6 py-4 text-center text-sm font-black text-white">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -733,11 +776,9 @@ const exportEmployeePDF = (report) => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${report.stats.completionRate >= 80
-                                                        ? 'bg-green-500/20 text-green-300 border border-green-500/50'
-                                                        : report.stats.completionRate >= 50
-                                                            ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
-                                                            : 'bg-red-500/20 text-red-300 border border-red-500/50'
+                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${report.stats.completionRate >= 80 ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
+                                                    report.stats.completionRate >= 50 ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
+                                                        'bg-red-500/20 text-red-300 border border-red-500/50'
                                                     }`}>
                                                     {report.stats.completionRate}%
                                                 </span>
@@ -772,27 +813,12 @@ const exportEmployeePDF = (report) => {
                                                         <Eye size={18} />
                                                     </button>
                                                     <button
-                                                        onClick={() => {
-                                                            console.log('📄 Exporting PDF for:', report.employee.fullName);
-                                                            console.log('📊 Report Data:', report);
-                                                            console.log('📋 Assignments:', report.assignments);
-                                                            console.log('📈 Stats:', report.stats);
-
-                                                            // Check if data is valid
-                                                            if (!report || !report.employee) {
-                                                                alert('❌ Error: No employee data found!');
-                                                                return;
-                                                            }
-
-                                                            // Export PDF
-                                                            exportEmployeePDF(report);
-                                                        }}
+                                                        onClick={() => exportEmployeePDF(report)}
                                                         className="p-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-all border border-red-500/50"
                                                         title="Export PDF"
                                                     >
                                                         <Download size={18} />
                                                     </button>
-
                                                 </div>
                                             </td>
                                         </tr>
@@ -830,7 +856,14 @@ const exportEmployeePDF = (report) => {
             {/* Employee Details Modal */}
             {showDetailsModal && selectedEmployee && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 max-w-6xl w-full border border-white/20 shadow-2xl my-8" style={{ marginTop: "475px" }}>
+                    <div
+                        className="bg-gradient-to-br from-slate-900 to-slate-900 rounded-2xl p-6 max-w-6xl w-full max-h-[97vh] overflow-y-auto border border-white/20 shadow-2xl my-9"
+                        style={{
+                            scrollbarWidth: 'none',  // For Firefox
+                            msOverflowStyle: 'none', // For IE and Edge
+                        }}
+                    >
+
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-2xl font-black text-white flex items-center gap-3">
                                 <User size={28} />
@@ -932,11 +965,9 @@ const exportEmployeePDF = (report) => {
                                                         <p className="text-sm text-blue-200/70">{assignment.candidate?.position || 'N/A'}</p>
                                                     </div>
                                                 </div>
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${assignment.status === 'completed'
-                                                        ? 'bg-green-500/20 text-green-300 border border-green-500/50'
-                                                        : assignment.status === 'in_progress'
-                                                            ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50'
-                                                            : 'bg-orange-500/20 text-orange-300 border border-orange-500/50'
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${assignment.status === 'completed' ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
+                                                    assignment.status === 'in_progress' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
+                                                        'bg-orange-500/20 text-orange-300 border border-orange-500/50'
                                                     }`}>
                                                     {assignment.status === 'pending' && '⏳ Pending'}
                                                     {assignment.status === 'in_progress' && '🔄 In Progress'}

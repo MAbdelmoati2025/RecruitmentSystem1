@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import RecruitmentSystem from './components/RecruitmentSystem';
-import EmployeeDashboard from './pages/EmployeeDashboard'; // 👈 تأكد من المسار ده
+import EmployeeDashboard from './components/EmployeeDashboard';
 import LoginPage from './pages/LoginPage';
 
 function ProtectedRoute({ children, user, allowedRole }) {

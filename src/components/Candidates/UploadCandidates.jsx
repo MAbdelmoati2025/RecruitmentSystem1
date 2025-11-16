@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Download } from 'lucide-react';
-import  API_URL  from '../../config/api';
+import API_URL from '../../config/api';
 
 function UploadCandidates({ onUpload }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -8,11 +8,11 @@ function UploadCandidates({ onUpload }) {
   const [uploadResult, setUploadResult] = useState(null);
 
   const downloadTemplate = () => {
-  const a = document.createElement('a');
-  a.href = '/candidates_template.csv'; // من مجلد public
-  a.download = 'candidates_template.csv';
-  a.click();
-};
+    const a = document.createElement('a');
+    a.href = '../../../candidates_template.csv'; // من مجلد public
+    a.download = 'candidates_template.csv';
+    a.click();
+  };
 
 
   const handleFileUpload = async (file) => {
@@ -23,11 +23,11 @@ function UploadCandidates({ onUpload }) {
       const text = await file.text();
       const lines = text.split('\n');
       const headers = lines[0].split(',').map(h => h.trim());
-      
+
       const candidates = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        
+
         const values = lines[i].split(',').map(v => v.trim());
         const candidate = {
           name: values[0] || '',
@@ -38,7 +38,7 @@ function UploadCandidates({ onUpload }) {
           position: values[5] || '',
           education: values[6] || ''
         };
-        
+
         if (candidate.phone && candidate.name) {
           candidates.push(candidate);
         }
@@ -90,9 +90,8 @@ function UploadCandidates({ onUpload }) {
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
           onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
-            isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-white/20 hover:border-white/40'
-          }`}
+          className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all ${isDragging ? 'border-blue-500 bg-blue-500/10' : 'border-white/20 hover:border-white/40'
+            }`}
         >
           <Upload size={48} className="mx-auto mb-4 text-blue-400" />
           <p className="text-white font-bold mb-2">Drag and drop your CSV file here</p>
@@ -121,7 +120,7 @@ function UploadCandidates({ onUpload }) {
         {uploadResult && (
           <div className={`mt-6 p-4 rounded-xl ${uploadResult.success ? 'bg-green-500/20 border border-green-500/50' : 'bg-red-500/20 border border-red-500/50'}`}>
             <p className="text-white font-bold">
-              {uploadResult.success 
+              {uploadResult.success
                 ? `✅ Successfully uploaded ${uploadResult.count} candidates!`
                 : `❌ Error: ${uploadResult.error}`
               }
@@ -131,17 +130,19 @@ function UploadCandidates({ onUpload }) {
       </div>
 
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/20">
-        <h3 className="text-xl font-black text-white mb-4">📋 Template Information</h3>
-        <p className="text-blue-200/80 mb-4">Download our template to ensure your file is formatted correctly:</p>
+        <h3 className="text-xl font-black text-white mb-4 text-left">📋 Template Information</h3>
+        <p className="text-blue-200/80 mb-4 text-left">: Download our template to ensure your file is formatted correctly</p>
+
         <button
           onClick={downloadTemplate}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:shadow-lg transition-all"
+          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-bold hover:shadow-lg transition-all float-left"
         >
           <Download size={20} />
           Download Template
         </button>
-        <div className="mt-4 p-4 bg-white/5 rounded-xl">
-          <p className="text-sm text-blue-200/70 font-mono">
+
+        <div className="mt-4 p-4 bg-white/5 rounded-xl px-2 py-3">
+          <p className="text-sm text-blue-200/70 font-mono ">
             Required columns: Name, Phone, Age, Address, Company, Position, Education
           </p>
         </div>

@@ -8,7 +8,8 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static('public'));
 
 // ============ Login API ============
@@ -366,8 +367,8 @@ app.get('/api/assignments/employee/:employeeId', async (req, res) => {
 
 app.post('/api/assignments/bulk', async (req, res) => {
   try {
-    const { assignments } = req.body;
-    console.log('📥 Received assignments:', assignments);
+    const { assignments, managerId, managerName } = req.body;
+    console.log('📥 Received assignments with managerId:', managerId);
 
     if (!assignments || !Array.isArray(assignments)) {
       return res.status(400).json({ 
@@ -380,13 +381,41 @@ app.post('/api/assignments/bulk', async (req, res) => {
       data: assignments.map(a => ({
         employeeId: a.employeeId,
         candidateId: a.candidateId,
+        managerId: managerId || null,
         status: a.status || 'pending',
         notes: a.notes || null
       })),
       skipDuplicates: true
     });
 
+    const employeeAssignments = assignments.reduce((acc, curr) => {
+      acc[curr.employeeId] = (acc[curr.employeeId] || 0) + 1;
+      return acc;
+    }, {});
+
+    for (const employeeId of Object.keys(employeeAssignments)) {
+      await prisma.notification.deleteMany({
+        where: {
+          employeeId: parseInt(employeeId),
+          type: 'assignment',
+          read: false
+        }
+      });
+    }
+
+    const notifications = Object.entries(employeeAssignments).map(([employeeId, count]) => ({
+      employeeId: parseInt(employeeId),
+      type: 'assignment',
+      message: `Manager ${managerName || 'System'} assigned you ${count} new ${count === 1 ? 'client' : 'clients'}`,
+      read: false
+    }));
+
+    await prisma.notification.createMany({
+      data: notifications
+    });
+
     console.log('✅ Created assignments:', createdAssignments.count);
+    console.log('✅ Created notifications:', notifications.length);
 
     res.json({
       success: true,
@@ -404,18 +433,85 @@ app.post('/api/assignments/bulk', async (req, res) => {
   }
 });
 
+// 🔥 ASSIGNMENT UPDATE - SENDS NOTIFICATION TO ALL MANAGERS
 app.patch('/api/assignments/:id', async (req, res) => {
   try {
     const assignmentId = parseInt(req.params.id);
-    const { status, notes } = req.body;
+    const { status, notes, employeeName, candidateName } = req.body;
+
+    console.log('📥 Assignment update request:', { assignmentId, status, employeeName, candidateName });
+
+    const currentAssignment = await prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      include: {
+        employee: true,
+        candidate: true,
+        manager: true
+      }
+    });
+
+    if (!currentAssignment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assignment not found'
+      });
+    }
 
     const updatedAssignment = await prisma.assignment.update({
       where: { id: assignmentId },
       data: {
         status,
-        notes
+        notes,
+        completedAt: status === 'completed' ? new Date() : null
       }
     });
+
+    console.log('✅ Assignment updated:', updatedAssignment);
+
+    // 🔥 إذا تم إكمال المهمة، إرسال إشعار لكل المانجرز
+    if (status === 'completed' && currentAssignment.status !== 'completed') {
+      
+      console.log('🔥 Task completed! Creating notifications for all managers...');
+      
+      const startTime = currentAssignment.assignedAt;
+      const endTime = new Date();
+      
+      const allManagers = await prisma.manager.findMany();
+      
+      console.log('📋 Found managers:', allManagers.length);
+      
+      if (allManagers.length === 0) {
+        console.log('⚠️ No managers found in system!');
+        return res.json({
+          success: true,
+          message: 'Assignment updated but no managers to notify',
+          assignment: updatedAssignment
+        });
+      }
+      
+      const notifications = allManagers.map(manager => ({
+        managerId: manager.id,
+        type: 'task_completed',
+        message: `✅ ${employeeName || currentAssignment.employee.fullName} completed the task for ${candidateName || currentAssignment.candidate.name}`,
+        read: false,
+        metadata: JSON.stringify({
+          employeeName: employeeName || currentAssignment.employee.fullName,
+          employeeId: currentAssignment.employeeId,
+          candidateName: candidateName || currentAssignment.candidate.name,
+          candidateId: currentAssignment.candidateId,
+          assignmentId: assignmentId,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          notes: notes || null
+        })
+      }));
+
+      const createdNotifications = await prisma.managerNotification.createMany({
+        data: notifications
+      });
+
+      console.log('✅ Manager notifications created:', createdNotifications.count);
+    }
 
     res.json({
       success: true,
@@ -424,10 +520,189 @@ app.patch('/api/assignments/:id', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Update assignment error:', error);
+    console.error('❌ Update assignment error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update assignment'
+      message: 'Failed to update assignment',
+      error: error.message
+    });
+  }
+});
+
+// ============ Notifications APIs ============
+
+// جلب إشعارات موظف
+app.get('/api/notifications/employee/:employeeId', async (req, res) => {
+  try {
+    const employeeId = parseInt(req.params.employeeId);
+    
+    const notifications = await prisma.notification.findMany({
+      where: { employeeId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ success: true, notifications });
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// جلب إشعارات مدير
+app.get('/api/notifications/manager/:managerId', async (req, res) => {
+  try {
+    const managerId = parseInt(req.params.managerId);
+    
+    const notifications = await prisma.managerNotification.findMany({
+      where: { managerId },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ success: true, notifications });
+  } catch (error) {
+    console.error('Get manager notifications error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// تحديد إشعار كمقروء
+app.patch('/api/notifications/:id/read', async (req, res) => {
+  try {
+    const notificationId = parseInt(req.params.id);
+    
+    try {
+      const employeeNotification = await prisma.notification.update({
+        where: { id: notificationId },
+        data: { read: true }
+      });
+      return res.json({ success: true, notification: employeeNotification });
+    } catch (e) {
+      const managerNotification = await prisma.managerNotification.update({
+        where: { id: notificationId },
+        data: { read: true }
+      });
+      return res.json({ success: true, notification: managerNotification });
+    }
+  } catch (error) {
+    console.error('Mark notification as read error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// تحديد جميع إشعارات موظف كمقروءة
+app.patch('/api/notifications/employee/:employeeId/read-all', async (req, res) => {
+  try {
+    const employeeId = parseInt(req.params.employeeId);
+    
+    await prisma.notification.updateMany({
+      where: { 
+        employeeId,
+        read: false 
+      },
+      data: { read: true }
+    });
+
+    res.json({ 
+      success: true,
+      message: 'All notifications marked as read'
+    });
+  } catch (error) {
+    console.error('Mark all as read error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// تحديد جميع إشعارات مدير كمقروءة
+app.patch('/api/notifications/manager/:managerId/read-all', async (req, res) => {
+  try {
+    const managerId = parseInt(req.params.managerId);
+    
+    const result = await prisma.managerNotification.updateMany({
+      where: { 
+        managerId,
+        read: false 
+      },
+      data: { read: true }
+    });
+
+    console.log('✅ Marked as read:', result.count);
+
+    res.json({ 
+      success: true,
+      message: 'All manager notifications marked as read',
+      count: result.count
+    });
+  } catch (error) {
+    console.error('Mark all manager notifications as read error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// حذف إشعار
+app.delete('/api/notifications/:id', async (req, res) => {
+  try {
+    const notificationId = parseInt(req.params.id);
+    
+    try {
+      await prisma.notification.delete({
+        where: { id: notificationId }
+      });
+      return res.json({ success: true, message: 'Notification deleted' });
+    } catch (e) {
+      await prisma.managerNotification.delete({
+        where: { id: notificationId }
+      });
+      return res.json({ success: true, message: 'Manager notification deleted' });
+    }
+  } catch (error) {
+    console.error('Delete notification error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error occurred' 
+    });
+  }
+});
+
+// 🔥 NEW: Clear ALL manager notifications
+app.delete('/api/notifications/manager/:managerId/clear-all', async (req, res) => {
+  try {
+    const managerId = parseInt(req.params.managerId);
+    
+    console.log('🗑️ Clearing all notifications for manager:', managerId);
+    
+    const result = await prisma.managerNotification.deleteMany({
+      where: { managerId }
+    });
+
+    console.log('✅ Deleted notifications:', result.count);
+
+    res.json({
+      success: true,
+      message: `Cleared ${result.count} notifications successfully`,
+      deletedCount: result.count
+    });
+
+  } catch (error) {
+    console.error('❌ Clear all notifications error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear notifications',
+      error: error.message
     });
   }
 });
