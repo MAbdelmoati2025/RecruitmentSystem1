@@ -102,8 +102,8 @@ function LoginPage({ onLogin }) {
 
             <div className="pt-8 space-y-3 text-sm text-blue-200/80 italic">
               <p>"Our smart recruitment system makes hiring effortless"</p>
-              <p className="font-arabic">نظام توظيف ذكي يجعل التوظيف سهلاً</p>
-              <p className="font-semibold">Said Monday, Delivered Monday</p>
+              {/* <p className="font-arabic">نظام توظيف ذكي يجعل التوظيف سهلاً</p>
+              <p className="font-semibold">Said Monday, Delivered Monday</p> */}
             </div>
           </div>
         </div>
@@ -252,7 +252,7 @@ function LoginPage({ onLogin }) {
 
             {/* Footer */}
             <p className="mt-8 text-center text-sm text-white/60">
-              © 2025 Mohamed Abdelmoati. All rights reserved.
+              © 2025 Mohamed Abdelmoati. All rights reserved
             </p>
           </div>
         </div>
