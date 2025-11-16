@@ -1,6 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import cors from 'cors';
+import { sendPasswordResetEmail, testEmailConnection } from './server/src/services/emailService.js';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -706,6 +707,282 @@ app.delete('/api/notifications/manager/:managerId/clear-all', async (req, res) =
     });
   }
 });
+// Add these endpoints to your server.js file
+
+// Store reset codes temporarily (in production, use Redis or database)
+const resetCodes = new Map();
+
+// Helper function to generate 6-digit code
+function generateResetCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Test email connection on server start
+testEmailConnection();
+
+// ============ Password Reset APIs ============
+
+// Step 1: Request password reset
+app.post('/api/password-reset/request', async (req, res) => {
+  try {
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username is required'
+      });
+    }
+
+    console.log(`🔍 Password reset request for username: ${username}`);
+
+    // Check in managers first
+    let user = await prisma.manager.findUnique({
+      where: { username },
+      select: { id: true, username: true, email: true, fullName: true }
+    });
+
+    let userType = 'manager';
+
+    // If not found, check in employees
+    if (!user) {
+      user = await prisma.employee.findUnique({
+        where: { username },
+        select: { id: true, username: true, email: true, fullName: true }
+      });
+      userType = 'employee';
+    }
+
+    if (!user) {
+      console.log(`❌ User not found: ${username}`);
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (!user.email) {
+      console.log(`❌ No email for user: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'No email associated with this account. Please contact your administrator.'
+      });
+    }
+
+    // Generate 6-digit reset code
+    const resetCode = generateResetCode();
+    const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+
+    // Store reset code
+    resetCodes.set(username, {
+      code: resetCode,
+      expiresAt: expiresAt,
+      userType: userType,
+      userId: user.id
+    });
+
+    console.log(`🔐 Reset code generated for ${username}: ${resetCode} (expires in 15 minutes)`);
+
+    // Send email with reset code
+    try {
+      await sendPasswordResetEmail(
+        user.email,
+        user.fullName,
+        resetCode,
+        username
+      );
+
+      // Mask email for security
+      const maskedEmail = user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+
+      console.log(`✅ Reset email sent successfully to: ${maskedEmail}`);
+
+      res.json({
+        success: true,
+        message: 'Reset code sent to your email',
+        email: maskedEmail
+      });
+
+    } catch (emailError) {
+      console.error('❌ Failed to send email:', emailError);
+      
+      // Remove the reset code if email fails
+      resetCodes.delete(username);
+      
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send reset email. Please check your email configuration or try again later.'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Password reset request error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred'
+    });
+  }
+});
+
+// Step 2: Verify reset code
+app.post('/api/password-reset/verify', async (req, res) => {
+  try {
+    const { username, code } = req.body;
+
+    if (!username || !code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Username and code are required'
+      });
+    }
+
+    console.log(`🔍 Verifying reset code for: ${username}`);
+
+    const resetData = resetCodes.get(username);
+
+    if (!resetData) {
+      console.log(`❌ No reset request found for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'No reset request found for this user'
+      });
+    }
+
+    // Check if code expired
+    if (Date.now() > resetData.expiresAt) {
+      resetCodes.delete(username);
+      console.log(`⏰ Reset code expired for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Reset code has expired. Please request a new one.'
+      });
+    }
+
+    // Verify code
+    if (resetData.code !== code) {
+      console.log(`❌ Invalid reset code for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid reset code'
+      });
+    }
+
+    console.log(`✅ Reset code verified for: ${username}`);
+
+    res.json({
+      success: true,
+      message: 'Code verified successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Verify reset code error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error occurred'
+    });
+  }
+});
+
+// Step 3: Reset password
+app.post('/api/password-reset/reset', async (req, res) => {
+  try {
+    const { username, code, newPassword } = req.body;
+
+    if (!username || !code || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    console.log(`🔄 Password reset attempt for: ${username}`);
+
+    const resetData = resetCodes.get(username);
+
+    if (!resetData) {
+      console.log(`❌ No reset request found for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'No reset request found'
+      });
+    }
+
+    // Check if code expired
+    if (Date.now() > resetData.expiresAt) {
+      resetCodes.delete(username);
+      console.log(`⏰ Reset code expired for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Reset code has expired'
+      });
+    }
+
+    // Verify code one more time
+    if (resetData.code !== code) {
+      console.log(`❌ Invalid reset code for: ${username}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid reset code'
+      });
+    }
+
+    // Update password based on user type
+    if (resetData.userType === 'manager') {
+      await prisma.manager.update({
+        where: { id: resetData.userId },
+        data: { password: newPassword }
+      });
+      console.log(`✅ Manager password updated: ${username}`);
+    } else {
+      await prisma.employee.update({
+        where: { id: resetData.userId },
+        data: { password: newPassword }
+      });
+      console.log(`✅ Employee password updated: ${username}`);
+    }
+
+    // Remove used reset code
+    resetCodes.delete(username);
+
+    console.log(`✅ Password reset successful for: ${username}`);
+
+    res.json({
+      success: true,
+      message: 'Password reset successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset password'
+    });
+  }
+});
+
+// Optional: Clean up expired codes periodically (run every hour)
+setInterval(() => {
+  const now = Date.now();
+  let cleanedCount = 0;
+  
+  for (const [username, data] of resetCodes.entries()) {
+    if (now > data.expiresAt) {
+      resetCodes.delete(username);
+      cleanedCount++;
+    }
+  }
+  
+  if (cleanedCount > 0) {
+    console.log(`🗑️ Cleaned up ${cleanedCount} expired reset code(s)`);
+  }
+}, 60 * 60 * 1000); // Every hour
 
 // Start server
 app.listen(PORT, () => {

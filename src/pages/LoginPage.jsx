@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import  API_URL  from '../config/api';
 import IconImage from '../photos/icon10.png';
+import ResetPasswordPage from './ResetPasswordPage'; // Import the reset password page
 
 function LoginPage({ onLogin }) {
   const [username, setUsername] = useState('');
@@ -9,6 +10,7 @@ function LoginPage({ onLogin }) {
   const [error, setError] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false); // New state
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -53,6 +55,11 @@ function LoginPage({ onLogin }) {
     }
   };
 
+  // Show reset password page if user clicked "Forgot password?"
+  if (showResetPassword) {
+    return <ResetPasswordPage onBack={() => setShowResetPassword(false)} />;
+  }
+
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Animated Background Elements */}
@@ -77,7 +84,7 @@ function LoginPage({ onLogin }) {
                   alt="Logo"
                   className="w-16 h-16 object-contain rounded-2xl shadow-2xl"
                 />
-                <h1 className="text-6xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+                <h1 className="text-7xl font-black bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text ">
                   Nexploy
                 </h1>
               </div>
@@ -206,9 +213,13 @@ function LoginPage({ onLogin }) {
                     <span className="ml-3 text-sm text-white/80 group-hover:text-white transition-colors">Remember me</span>
                   </label>
 
-                  <a href="#" className="text-sm font-medium text-blue-300 hover:text-blue-200 transition-colors hover:underline">
-                    Forgot password?
-                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword(true)}
+                    className="text-sm font-medium text-blue-300 hover:text-blue-200 transition-colors hover:underline"
+                  >
+                    ? Forgot password
+                  </button>
                 </div>
 
                 <button
@@ -301,5 +312,4 @@ function LoginPage({ onLogin }) {
     </div>
   );
 }
-
 export default LoginPage;
