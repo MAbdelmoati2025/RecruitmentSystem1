@@ -322,55 +322,57 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
 
       {/* Candidates Table */}
       <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/5 border-b border-white/20">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Name</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Phone</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Age</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Address</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Company</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Position</th>
-                <th className="px-6 py-4 text-left text-sm font-black text-white">Education</th>
-                <th className="px-6 py-4 text-center text-sm font-black text-white">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCandidates.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-white/50">
-                    No candidates found
-                  </td>
-                </tr>
-              ) : (
-                filteredCandidates.map((candidate) => (
-                  <tr key={candidate.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 text-white font-bold">{candidate.name}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.phone}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.age || '-'}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.address || '-'}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.company || '-'}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.position || '-'}</td>
-                    <td className="px-6 py-4 text-blue-200/80">{candidate.education || '-'}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center">
-                        <button
-                          onClick={() => handleDeleteCandidate(candidate.id)}
-                          className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-all border border-red-500/50"
-                          title="Delete candidate"
-                        >
-                          <Trash2 size={16} className="text-red-300" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead className="bg-white/5 border-b border-white/20">
+        <tr>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Name</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Phone</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Age</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Address</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Company</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Position</th>
+          <th className="px-6 py-4 text-left text-sm font-black text-white">Education</th>
+          <th className="px-6 py-4 text-center text-sm font-black text-white">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredCandidates.length === 0 ? (
+          <tr>
+            <td colSpan="8" className="px-6 py-12 text-center text-white/50">
+              No candidates found
+            </td>
+          </tr>
+        ) : (
+          // Slice to first 10
+          filteredCandidates.slice(0, 10).map((candidate) => (
+            <tr key={candidate.id} className="border-b border-white/10 hover:bg-white/5 transition-colors">
+              <td className="px-6 py-4 text-white font-bold">{candidate.name}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.phone}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.age || '-'}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.address || '-'}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.company || '-'}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.position || '-'}</td>
+              <td className="px-6 py-4 text-blue-200/80">{candidate.education || '-'}</td>
+              <td className="px-6 py-4">
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => handleDeleteCandidate(candidate.id)}
+                    className="p-2 bg-red-500/20 hover:bg-red-500/40 rounded-lg transition-all border border-red-500/50"
+                    title="Delete candidate"
+                  >
+                    <Trash2 size={16} className="text-red-300" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
       {/* Assign Modal */}
       {showAssignModal && (

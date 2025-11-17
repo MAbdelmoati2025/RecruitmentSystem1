@@ -5,7 +5,7 @@ import { sendPasswordResetEmail, testEmailConnection } from './server/src/servic
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 // Middleware
 app.use(cors());
