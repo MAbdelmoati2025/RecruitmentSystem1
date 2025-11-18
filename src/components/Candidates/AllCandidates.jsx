@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, Trash2, UserPlus, X, Loader2 } from 'lucide-react';
 import API_URL from '../../config/api';
+import CampaignFilters from './CampaignFilters';
 
 function AllCandidates({ candidates, filters, setFilters, onDelete, employees, assignments, onAssign }) {
   const [showFilters, setShowFilters] = useState(false);
@@ -10,6 +11,7 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
   const [assigning, setAssigning] = useState(false);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
 
   // Simulate loading effect with progress
   useEffect(() => {
@@ -78,6 +80,17 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
       alert('❌ An error occurred while deleting');
     }
   };
+  {/* Campaign Modal */ }
+  {
+    showCampaignModal && (
+      <CampaignFilters
+        candidates={candidates}
+        employees={employees}
+        onAssign={onAssign}
+        onClose={() => setShowCampaignModal(false)}
+      />
+    )
+  }
 
   const handleDeleteAllCandidates = async () => {
     if (!window.confirm('⚠️ Are you sure you want to delete ALL candidates? This action cannot be undone!')) return;
@@ -141,6 +154,7 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
     }
   };
 
+
   // Loading Screen
   if (loading) {
     return (
@@ -149,14 +163,14 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
         <div className="absolute inset-0 overflow-hidden">
           {/* Moving Circles */}
           <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
-          
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+
           {/* Floating Squares */}
-          <div className="absolute top-10 right-1/4 w-12 h-12 bg-blue-400/20 rotate-45 animate-bounce" style={{animationDuration: '3s'}}></div>
-          <div className="absolute bottom-10 left-1/4 w-16 h-16 bg-blue-400/20 rotate-12 animate-bounce" style={{animationDuration: '4s', animationDelay: '0.5s'}}></div>
-          
+          <div className="absolute top-10 right-1/4 w-12 h-12 bg-blue-400/20 rotate-45 animate-bounce" style={{ animationDuration: '3s' }}></div>
+          <div className="absolute bottom-10 left-1/4 w-16 h-16 bg-blue-400/20 rotate-12 animate-bounce" style={{ animationDuration: '4s', animationDelay: '0.5s' }}></div>
+
           {/* Rotating Ring */}
-          <div className="absolute top-1/3 right-1/3 w-32 h-32 border-4 border-blue-400/20 rounded-full animate-spin" style={{animationDuration: '8s'}}></div>
+          <div className="absolute top-1/3 right-1/3 w-32 h-32 border-4 border-blue-400/20 rounded-full animate-spin" style={{ animationDuration: '8s' }}></div>
         </div>
 
         <div className="text-center relative z-10 w-full max-w-md px-6">
@@ -164,11 +178,11 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
           <div className="relative mb-8">
             <div className="w-40 h-40 mx-auto relative">
               {/* Outer rotating ring */}
-              <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-spin" style={{animationDuration: '3s'}}></div>
-              
+              <div className="absolute inset-0 border-4 border-blue-500/30 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
+
               {/* Pulsing background */}
               <div className="absolute inset-0 bg-blue-500/20 rounded-full animate-ping"></div>
-              
+
               {/* Main circle with percentage */}
               <div className="relative bg-gradient-to-br from-blue-500 to-blue-700 rounded-full w-40 h-40 flex items-center justify-center border-4 border-white/20 shadow-2xl">
                 <div className="text-center">
@@ -180,9 +194,9 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
                   </div>
                 </div>
               </div>
-              
+
               {/* Orbiting dot */}
-              <div className="absolute inset-0 animate-spin" style={{animationDuration: '2s'}}>
+              <div className="absolute inset-0 animate-spin" style={{ animationDuration: '2s' }}>
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg"></div>
               </div>
             </div>
@@ -198,9 +212,9 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
 
           {/* Progress Bar */}
           <div className="w-full bg-white/10 rounded-full h-4 overflow-hidden border border-white/20 mb-6">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
-              style={{width: `${progress}%`}}
+              style={{ width: `${progress}%` }}
             >
               {progress > 10 && (
                 <span className="text-xs font-bold text-white">{progress}%</span>
@@ -236,7 +250,7 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
           <h3 className="text-2xl font-black text-white">All Candidates</h3>
           <p className="text-blue-200/70">Showing {filteredCandidates.length} of {candidates.length} candidates</p>
         </div>
-        
+
         <div className="flex gap-3">
           {/* Assign Filtered Button */}
           {filteredCandidates.length > 0 && (
@@ -251,12 +265,22 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
 
           {/* Filters Button */}
           <button
+            onClick={() => setShowCampaignModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl text-white rounded-xl font-bold hover:bg-white/20 transition-all border border-white/20"
+          >
+            <Filter size={20} />
+            Run Campaign
+          </button>
+
+          {/* Filters Button */}
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl text-white rounded-xl font-bold hover:bg-white/20 transition-all border border-white/20"
           >
             <Filter size={20} />
             Filters
           </button>
+
 
           {/* Delete All Button */}
           {candidates.length > 0 && (
@@ -285,35 +309,35 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
               type="number"
               placeholder="Age"
               value={filters.age}
-              onChange={(e) => setFilters({...filters, age: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, age: e.target.value })}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
             />
             <input
               type="text"
               placeholder="Address"
               value={filters.address}
-              onChange={(e) => setFilters({...filters, address: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, address: e.target.value })}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
             />
             <input
               type="text"
               placeholder="Company"
               value={filters.company}
-              onChange={(e) => setFilters({...filters, company: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, company: e.target.value })}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
             />
             <input
               type="text"
               placeholder="Position"
               value={filters.position}
-              onChange={(e) => setFilters({...filters, position: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, position: e.target.value })}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
             />
             <input
               type="text"
               placeholder="Education"
               value={filters.education}
-              onChange={(e) => setFilters({...filters, education: e.target.value})}
+              onChange={(e) => setFilters({ ...filters, education: e.target.value })}
               className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/50 focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -371,6 +395,17 @@ function AllCandidates({ candidates, filters, setFilters, onDelete, employees, a
           </table>
         </div>
       </div>
+      {/* Campaign Modal */}
+      {
+        showCampaignModal && (
+          <CampaignFilters
+            candidates={candidates}
+            employees={employees}
+            onAssign={onAssign}
+            onClose={() => setShowCampaignModal(false)}
+          />
+        )
+      }
 
       {/* Assign Modal */}
       {showAssignModal && (

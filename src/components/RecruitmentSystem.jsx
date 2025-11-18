@@ -7,7 +7,7 @@ import EmployeesAssignments from './Employees/EmployeesAssignments';
 import SummaryReport from './Reports/SummaryReport';
 import Report from './Reports/ReportsPage';
 import ManagerNotifications from './Notifications/ManagerNotifications'; // 🔥 NEW
-
+import WhatsAppExtension from './Candidates/WhatsAppExtension';
 import API_URL from '../config/api';
 
 function RecruitmentSystem() {
@@ -16,10 +16,10 @@ function RecruitmentSystem() {
   const [employees, setEmployees] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [manager, setManager] = useState(null);
-  
+
   // 🔥 إضافة state للإشعارات
   const [notifications, setNotifications] = useState([]);
-  
+
   const [filters, setFilters] = useState({
     age: '',
     address: '',
@@ -30,7 +30,7 @@ function RecruitmentSystem() {
 
   useEffect(() => {
     loadStoredData();
-    
+
     const storedManager = JSON.parse(sessionStorage.getItem('employee'));
     if (storedManager && storedManager.role === 'manager') {
       setManager(storedManager);
@@ -58,7 +58,7 @@ function RecruitmentSystem() {
       await fetch(`${API_URL}/notifications/${notificationId}/read`, {
         method: 'PATCH'
       });
-      
+
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
@@ -73,7 +73,7 @@ function RecruitmentSystem() {
       await fetch(`${API_URL}/notifications/manager/${manager.id}/read-all`, {
         method: 'PATCH'
       });
-      
+
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch (error) {
       console.error('Mark all as read error:', error);
@@ -86,7 +86,7 @@ function RecruitmentSystem() {
       await fetch(`${API_URL}/notifications/${notificationId}`, {
         method: 'DELETE'
       });
-      
+
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
     } catch (error) {
       console.error('Delete notification error:', error);
@@ -189,7 +189,7 @@ function RecruitmentSystem() {
 
       case 'summary':
         return <SummaryReport employees={employees} assignments={assignments} />;
-        
+
       case 'Report':
         return <Report employees={employees} assignments={assignments} />;
 
@@ -202,6 +202,8 @@ function RecruitmentSystem() {
             onDelete={deleteNotification}
           />
         );
+      case 'whatsapp':
+        return <WhatsAppExtension />;
 
       default:
         return <Dashboard candidates={candidates} employees={employees} assignments={assignments} />;
@@ -231,6 +233,7 @@ function RecruitmentSystem() {
               {currentPage === 'summary' && '📊 Summary Report'}
               {currentPage === 'Report' && '📊 Report'}
               {currentPage === 'notifications' && '🔔 Notifications'} {/* 🔥 NEW */}
+              {currentPage === 'whatsapp' && '💬 WhatsApp Extension'}
             </h2>
           </div>
         </header>
