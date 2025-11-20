@@ -5,7 +5,7 @@ import { sendPasswordResetEmail, testEmailConnection } from './server/src/servic
 
 const app = express();
 const prisma = new PrismaClient();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 // Middleware
 app.use(cors());
@@ -170,9 +170,10 @@ app.get('/api/candidates', async (req, res) => {
   }
 });
 
+// ============ Enhanced Upload with Duplicate Detection ============
 app.post('/api/candidates/bulk', async (req, res) => {
   try {
-    const { candidates } = req.body;
+    const { candidates, uploadedBy } = req.body;
 
     if (!candidates || !Array.isArray(candidates)) {
       return res.status(400).json({ 
@@ -183,6 +184,57 @@ app.post('/api/candidates/bulk', async (req, res) => {
 
     const uploadBatch = new Date().toISOString();
 
+    // 🔥 فحص التكرارات
+    const phones = candidates.map(c => c.phone).filter(Boolean);
+    
+    // فحص في Candidate الحالية
+    const existingCandidates = await prisma.candidate.findMany({
+      where: {
+        phone: { in: phones }
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        company: true,
+        position: true
+      }
+    });
+
+    // فحص في History
+    const existingInHistory = await prisma.candidateHistory.findMany({
+      where: {
+        phone: { in: phones }
+      },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        company: true,
+        position: true,
+        isActive: true,
+        createdAt: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // 🔥 إذا وُجدت تكرارات، أرجع البيانات للمستخدم
+    if (existingCandidates.length > 0 || existingInHistory.length > 0) {
+      return res.status(409).json({ // 409 Conflict
+        success: false,
+        isDuplicate: true,
+        duplicates: {
+          inCandidates: existingCandidates,
+          inHistory: existingInHistory
+        },
+        message: `Found ${existingCandidates.length} duplicates in current candidates and ${existingInHistory.length} in history`,
+        candidatesToUpload: candidates // أرجع الداتا الجديدة لو المستخدم عايز يعمل merge
+      });
+    }
+
+    // 🔥 لو مافيش تكرار، احفظ في الـ Candidates و History
     const createdCandidates = await prisma.candidate.createMany({
       data: candidates.map(c => ({
         name: c.name,
@@ -197,6 +249,23 @@ app.post('/api/candidates/bulk', async (req, res) => {
       skipDuplicates: true
     });
 
+    // 🔥 احفظ في History
+    await prisma.candidateHistory.createMany({
+      data: candidates.map(c => ({
+        name: c.name,
+        phone: c.phone,
+        age: c.age,
+        address: c.address,
+        company: c.company,
+        position: c.position,
+        education: c.education,
+        uploadBatch: uploadBatch,
+        source: 'upload',
+        uploadedBy: uploadedBy || 'Unknown',
+        isActive: true
+      }))
+    });
+
     res.json({
       success: true,
       message: `${createdCandidates.count} candidates added successfully`,
@@ -209,6 +278,318 @@ app.post('/api/candidates/bulk', async (req, res) => {
       success: false, 
       message: 'Server error',
       error: error.message 
+    });
+  }
+});
+
+// 🔥 API لحل التكرارات (Merge or Skip)
+app.post('/api/candidates/resolve-duplicates', async (req, res) => {
+  try {
+    const { candidates, action, uploadedBy } = req.body;
+    // action: 'merge' or 'skip' or 'replace'
+
+    if (!candidates || !Array.isArray(candidates)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid data' 
+      });
+    }
+
+    const uploadBatch = new Date().toISOString();
+    let processedCount = 0;
+
+    if (action === 'skip') {
+      // اتخطى التكرارات، أضف الجديد فقط
+      const phones = candidates.map(c => c.phone);
+      const existing = await prisma.candidate.findMany({
+        where: { phone: { in: phones } },
+        select: { phone: true }
+      });
+      
+      const existingPhones = new Set(existing.map(c => c.phone));
+      const newCandidates = candidates.filter(c => !existingPhones.has(c.phone));
+
+      if (newCandidates.length > 0) {
+        const created = await prisma.candidate.createMany({
+          data: newCandidates.map(c => ({
+            name: c.name,
+            phone: c.phone,
+            age: c.age,
+            address: c.address,
+            company: c.company,
+            position: c.position,
+            education: c.education,
+            uploadBatch: uploadBatch
+          }))
+        });
+
+        await prisma.candidateHistory.createMany({
+          data: newCandidates.map(c => ({
+            name: c.name,
+            phone: c.phone,
+            age: c.age,
+            address: c.address,
+            company: c.company,
+            position: c.position,
+            education: c.education,
+            uploadBatch: uploadBatch,
+            source: 'upload',
+            uploadedBy: uploadedBy,
+            isActive: true
+          }))
+        });
+
+        processedCount = created.count;
+      }
+    } 
+    else if (action === 'merge') {
+      // دمج: حدّث القديم بالجديد
+      for (const candidate of candidates) {
+        await prisma.candidate.upsert({
+          where: { phone: candidate.phone },
+          update: {
+            name: candidate.name,
+            age: candidate.age,
+            address: candidate.address,
+            company: candidate.company,
+            position: candidate.position,
+            education: candidate.education,
+            uploadBatch: uploadBatch,
+            updatedAt: new Date()
+          },
+          create: {
+            name: candidate.name,
+            phone: candidate.phone,
+            age: candidate.age,
+            address: candidate.address,
+            company: candidate.company,
+            position: candidate.position,
+            education: candidate.education,
+            uploadBatch: uploadBatch
+          }
+        });
+
+        // أضف في History
+        await prisma.candidateHistory.create({
+          data: {
+            name: candidate.name,
+            phone: candidate.phone,
+            age: candidate.age,
+            address: candidate.address,
+            company: candidate.company,
+            position: candidate.position,
+            education: candidate.education,
+            uploadBatch: uploadBatch,
+            source: 'merge',
+            uploadedBy: uploadedBy,
+            isActive: true
+          }
+        });
+
+        processedCount++;
+      }
+    }
+    else if (action === 'replace') {
+      // استبدل: احذف القديم وأضف الجديد
+      const phones = candidates.map(c => c.phone);
+      
+      await prisma.candidate.deleteMany({
+        where: { phone: { in: phones } }
+      });
+
+      const created = await prisma.candidate.createMany({
+        data: candidates.map(c => ({
+          name: c.name,
+          phone: c.phone,
+          age: c.age,
+          address: c.address,
+          company: c.company,
+          position: c.position,
+          education: c.education,
+          uploadBatch: uploadBatch
+        }))
+      });
+
+      await prisma.candidateHistory.createMany({
+        data: candidates.map(c => ({
+          name: c.name,
+          phone: c.phone,
+          age: c.age,
+          address: c.address,
+          company: c.company,
+          position: c.position,
+          education: c.education,
+          uploadBatch: uploadBatch,
+          source: 'replace',
+          uploadedBy: uploadedBy,
+          isActive: true
+        }))
+      });
+
+      processedCount = created.count;
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully processed ${processedCount} candidates`,
+      count: processedCount
+    });
+
+  } catch (error) {
+    console.error('Resolve duplicates error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message 
+    });
+  }
+});
+
+// 🔥 History APIs
+app.get('/api/history', async (req, res) => {
+  try {
+    const { isActive, uploadBatch, startDate, endDate } = req.query;
+
+    const where = {};
+    
+    if (isActive !== undefined) {
+      where.isActive = isActive === 'true';
+    }
+    
+    if (uploadBatch) {
+      where.uploadBatch = uploadBatch;
+    }
+    
+    if (startDate && endDate) {
+      where.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    }
+
+    const history = await prisma.candidateHistory.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({ success: true, history });
+  } catch (error) {
+    console.error('Get history error:', error);
+    res.status(500).json({ success: false, message: 'Error occurred' });
+  }
+});
+
+// 🔥 عند حذف Candidate، حدّث History
+// ============ Candidates Delete APIs - CORRECT ORDER ============
+
+// 🔥 Delete ALL candidates - MUST BE FIRST (more specific route)
+
+
+
+// Delete all candidates - MUST BE FIRST
+
+// 🔥 Delete ALL candidates - MUST BE FIRST (more specific route)
+app.delete('/api/candidates/all', async (req, res) => {
+  try {
+    console.log('🗑️ Deleting ALL candidates...');
+
+    // حدّث كل History على أنها غير نشطة
+    await prisma.candidateHistory.updateMany({
+      where: { isActive: true },
+      data: {
+        isActive: false,
+        deletedAt: new Date()
+      }
+    });
+
+    // احذف كل الـ assignments
+    await prisma.assignment.deleteMany({});
+    
+    // احذف كل الـ candidates
+    const result = await prisma.candidate.deleteMany({});
+
+    console.log('✅ All candidates deleted:', result.count);
+
+    res.json({
+      success: true,
+      message: 'All candidates deleted successfully',
+      deletedCount: result.count
+    });
+
+  } catch (error) {
+    console.error('❌ Delete all candidates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete all candidates',
+      error: error.message
+    });
+  }
+});
+
+// 🔥 Delete single candidate by ID - MUST BE SECOND
+app.delete('/api/candidates/:id', async (req, res) => {
+  try {
+    const candidateId = parseInt(req.params.id);
+    
+    // التحقق من صحة الـ ID
+    if (isNaN(candidateId) || candidateId <= 0) {
+      console.log('❌ Invalid candidate ID received:', req.params.id);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid candidate ID'
+      });
+    }
+
+    console.log('🗑️ Deleting candidate:', candidateId);
+
+    // البحث عن الـ candidate
+    const candidate = await prisma.candidate.findUnique({
+      where: { id: candidateId }
+    });
+
+    if (!candidate) {
+      console.log('❌ Candidate not found:', candidateId);
+      return res.status(404).json({
+        success: false,
+        message: 'Candidate not found'
+      });
+    }
+
+    // 🔥 حدّث History قبل الحذف
+    await prisma.candidateHistory.updateMany({
+      where: {
+        phone: candidate.phone,
+        isActive: true
+      },
+      data: {
+        isActive: false,
+        deletedAt: new Date()
+      }
+    });
+
+    // احذف الـ assignments المرتبطة
+    await prisma.assignment.deleteMany({
+      where: { candidateId: candidateId }
+    });
+
+    // احذف الـ candidate
+    await prisma.candidate.delete({
+      where: { id: candidateId }
+    });
+
+    console.log('✅ Candidate deleted successfully:', candidateId);
+
+    res.json({
+      success: true,
+      message: 'Candidate deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Delete candidate error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete candidate',
+      error: error.message
     });
   }
 });
@@ -247,78 +628,47 @@ app.patch('/api/candidates/:id', async (req, res) => {
   }
 });
 
-// Delete all candidates - MUST BE FIRST
-app.delete('/api/candidates/all', async (req, res) => {
+
+// أضف هذا الـ endpoint في ملف الـ routes الخاص بالـ history
+
+// DELETE /api/history/:id - حذف سجل واحد من الـ history
+app.delete('/api/history/:id', async (req, res) => {
   try {
-    console.log('🗑️ Deleting all candidates...');
+    const historyId = parseInt(req.params.id);
 
-    await prisma.assignment.deleteMany({});
-    console.log('✅ Deleted all assignments');
-
-    await prisma.candidate.deleteMany({});
-    console.log('✅ Deleted all candidates');
-
-    res.json({
-      success: true,
-      message: 'All candidates deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('❌ Delete all candidates error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete all candidates',
-      error: error.message
-    });
-  }
-});
-
-// Delete single candidate
-app.delete('/api/candidates/:id', async (req, res) => {
-  try {
-    const candidateId = parseInt(req.params.id);
-    
-    if (isNaN(candidateId) || candidateId <= 0) {
-      console.log('❌ Invalid candidate ID received:', req.params.id);
+    if (!historyId || isNaN(historyId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid candidate ID'
+        message: 'Invalid history ID'
       });
     }
 
-    console.log('🗑️ Deleting candidate:', candidateId);
-
-    const candidate = await prisma.candidate.findUnique({
-      where: { id: candidateId }
+    // حذف السجل من CandidateHistory
+    const deletedRecord = await prisma.candidateHistory.delete({
+      where: { id: historyId }
     });
 
-    if (!candidate) {
-      return res.status(404).json({
-        success: false,
-        message: 'Candidate not found'
-      });
-    }
-
-    await prisma.assignment.deleteMany({
-      where: { candidateId: candidateId }
-    });
-
-    await prisma.candidate.delete({
-      where: { id: candidateId }
-    });
-
-    console.log('✅ Candidate deleted successfully');
+    console.log('✅ History record deleted:', deletedRecord.id);
 
     res.json({
       success: true,
-      message: 'Candidate deleted successfully'
+      message: 'History record deleted successfully',
+      deletedId: deletedRecord.id
     });
 
   } catch (error) {
-    console.error('❌ Delete candidate error:', error);
+    console.error('❌ Delete history error:', error);
+    
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'History record not found'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Failed to delete candidate',
+      message: 'Failed to delete history record',
       error: error.message
     });
   }

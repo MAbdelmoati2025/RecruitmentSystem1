@@ -3,6 +3,8 @@ import Sidebar from './Sidebar/Sidebar';
 import Dashboard from './Dashboard/Dashboard';
 import UploadCandidates from './Candidates/UploadCandidates';
 import AllCandidates from './Candidates/AllCandidates';
+import AllCandidate from './Candidates/history';
+
 import EmployeesAssignments from './Employees/EmployeesAssignments';
 import SummaryReport from './Reports/SummaryReport';
 import Report from './Reports/ReportsPage';
@@ -167,6 +169,18 @@ function RecruitmentSystem() {
       case 'candidates':
         return (
           <AllCandidates
+            candidates={candidates}
+            filters={filters}
+            setFilters={setFilters}
+            onDelete={handleDeleteCandidate}
+            employees={employees}
+            assignments={assignments}
+            onAssign={handleAssign}
+          />
+        );
+      case 'candidate':
+        return (
+          <AllCandidate
             candidates={candidates}
             filters={filters}
             setFilters={setFilters}

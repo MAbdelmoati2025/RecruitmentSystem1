@@ -1,0 +1,6 @@
+2025/11/20-15:12:09.485 6cd0 Reusing MANIFEST E:\8\whatsapp_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2025/11/20-15:12:09.554 6cd0 Recovering log #4
+2025/11/20-15:12:09.755 6cd0 Reusing old log E:\8\whatsapp_profile\Default\Local Storage\leveldb/000004.log 
+2025/11/20-15:14:13.127 6cd0 Level-0 table #7: started
+2025/11/20-15:14:13.337 6cd0 Level-0 table #7: 18810 bytes OK
+2025/11/20-15:14:13.539 6cd0 Delete type=0 #4

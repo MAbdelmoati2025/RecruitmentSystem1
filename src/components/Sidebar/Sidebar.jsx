@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Upload, Users, UserCheck, BarChart3, File, Bell } from 'lucide-react';
+import { LayoutDashboard, Upload, Users, UserCheck, BarChart3, File, Bell ,Database } from 'lucide-react';
 import SidebarItem from './SidebarItem';
 import IconImage from '../../photos/icon10.png';
 import { MessageSquare } from "lucide-react";
@@ -64,6 +64,15 @@ function Sidebar({ currentPage, setCurrentPage, candidatesCount, unreadNotificat
           active={currentPage === 'dashboard'}
           onClick={() => setCurrentPage('dashboard')}
         />
+        <SidebarItem
+          icon={<Bell size={20} />}
+          label="Notifications"
+          active={currentPage === 'notifications'}
+          onClick={() => setCurrentPage('notifications')}
+          badge={unreadNotifications}
+          badgeColor={unreadNotifications > 0 ? 'red' : null}
+          animated={unreadNotifications > 0}
+        />
 
         <SidebarItem
           icon={<Upload size={20} />}
@@ -88,15 +97,6 @@ function Sidebar({ currentPage, setCurrentPage, candidatesCount, unreadNotificat
         />
 
         {/* 🔥 زر الإشعارات مع Badge أحمر متحرك */}
-        <SidebarItem
-          icon={<Bell size={20} />}
-          label="Notifications"
-          active={currentPage === 'notifications'}
-          onClick={() => setCurrentPage('notifications')}
-          badge={unreadNotifications}
-          badgeColor={unreadNotifications > 0 ? 'red' : null}
-          animated={unreadNotifications > 0}
-        />
 
         <SidebarItem
           icon={<BarChart3 size={20} />}
@@ -117,6 +117,13 @@ function Sidebar({ currentPage, setCurrentPage, candidatesCount, unreadNotificat
           active={currentPage === 'whatsapp'}
           onClick={() => setCurrentPage('whatsapp')}
         />
+        <SidebarItem
+          icon={<Database size={20} />}
+          label="History"
+          active={currentPage === 'candidate'}
+          onClick={() => setCurrentPage('candidate')}
+        />
+
       </nav>
 
       {/* Footer - التاريخ والـ Logout - بره الـ nav */}

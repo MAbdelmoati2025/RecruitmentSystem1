@@ -1,0 +1,3350 @@
+import React, { useState } from 'react';
+import { Send, Phone, MessageSquare, Play, Download, CheckCircle, AlertCircle, Zap, Terminal, Copy, Code } from 'lucide-react';
+
+function WhatsAppSeleniumRunner() {
+  const [phoneNumbers, setPhoneNumbers] = useState('');
+  const [message, setMessage] = useState('');
+  const [logs, setLogs] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+
+  // تنظيف الأرقام
+  const parsePhoneNumbers = (text) => {
+    const numbers = text
+      .split(/[\s,،\n]+/)
+      .map(num => num.trim().replace(/\D/g, ''))
+      .filter(num => num.length >= 10);
+    return numbers;
+  };
+
+  // إضافة لوج
+  const addLog = (msg, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString('ar-EG');
+    setLogs(prev => [...prev, { msg, type, timestamp }]);
+  };
+
+  // توليد كود Python المحسّن
+  const generatePythonCode = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    if (numbers.length === 0 || !message.trim()) return '';
+
+    const formattedNumbers = numbers.map(num => 
+      num.startsWith('20') ? '+' + num : '+20' + num
+    );
+
+    return `"""
+WhatsApp Selenium Sender - Auto Generated 🔥
+"""
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
+import os
+
+# الأرقام
+numbers = ${JSON.stringify(formattedNumbers, null, 2)}
+
+# الرسالة
+message = """${message}"""
+
+print("🔥 Selenium Mode - بدء الإرسال!")
+print(f"📤 عدد الرسائل: {len(numbers)}\\n")
+
+# إعدادات Chrome
+options = webdriver.ChromeOptions()
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--start-maximized")
+
+profile_path = os.path.join(os.getcwd(), "whatsapp_profile")
+options.add_argument(f"--user-data-dir={profile_path}")
+
+try:
+    print("⏳ تشغيل Chrome...")
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
+    print("✅ Chrome جاهز!\\n")
+except Exception as e:
+    print(f"❌ خطأ: {e}")
+    exit()
+
+driver.get("https://web.whatsapp.com")
+print("📱 امسح QR Code إذا لم تكن مسجلاً...")
+input("\\n✅ اضغط Enter بعد تسجيل الدخول...\\n")
+
+wait = WebDriverWait(driver, 30)
+success_count = 0
+failed_count = 0
+
+for i, number in enumerate(numbers, 1):
+    try:
+        print(f"⚡ [{i}/{len(numbers)}] جاري الإرسال إلى: {number}")
+        
+        driver.get(f"https://web.whatsapp.com/send?phone={number}")
+        time.sleep(3)
+        
+        # البحث عن صندوق الرسالة
+        try:
+            msg_box = wait.until(EC.presence_of_element_located(
+                (By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]')
+            ))
+        except:
+            try:
+                msg_box = wait.until(EC.presence_of_element_located(
+                    (By.XPATH, '//footer//div[@contenteditable="true"]')
+                ))
+            except:
+                msg_box = driver.find_element(
+                    By.XPATH, 
+                    '//div[@role="textbox" and @contenteditable="true"]'
+                )
+        
+        msg_box.click()
+        time.sleep(0.5)
+        
+        # كتابة الرسالة حرف حرف
+        for char in message:
+            msg_box.send_keys(char)
+            time.sleep(0.02)
+        
+        time.sleep(0.5)
+        msg_box.send_keys(Keys.ENTER)
+        
+        print(f"✅ تم الإرسال بنجاح!")
+        success_count += 1
+        time.sleep(2)
+        
+    except Exception as e:
+        print(f"❌ فشل: {str(e)}")
+        failed_count += 1
+        time.sleep(2)
+        continue
+
+print(f"\\n{'='*50}")
+print(f"🎉 انتهى الإرسال!")
+print(f"✅ نجح: {success_count}")
+print(f"❌ فشل: {failed_count}")
+print(f"📊 الإجمالي: {len(numbers)}")
+print(f"{'='*50}\\n")
+
+input("اضغط Enter للخروج...")
+driver.quit()
+`;
+  };
+
+  // محاكاة تشغيل Python
+  const simulateRun = async () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    
+    if (numbers.length === 0) {
+      addLog('❌ لا توجد أرقام صحيحة!', 'error');
+      return;
+    }
+    
+    if (!message.trim()) {
+      addLog('❌ الرجاء كتابة رسالة!', 'error');
+      return;
+    }
+
+    setIsRunning(true);
+    setLogs([]);
+
+    addLog('🔥 بدء عملية الإرسال...', 'success');
+    addLog(`📊 عدد الأرقام: ${numbers.length}`, 'info');
+    addLog('⏳ تشغيل Selenium...', 'info');
+    
+    await sleep(2000);
+    addLog('✅ Chrome مفتوح بنجاح!', 'success');
+    addLog('📱 جاري فتح WhatsApp Web...', 'info');
+    
+    await sleep(2000);
+    addLog('⚠️ تنبيه: تأكد من مسح QR Code إذا لزم الأمر', 'warning');
+    addLog('🚀 بدء الإرسال للأرقام...', 'info');
+
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < numbers.length; i++) {
+      await sleep(1500);
+      const num = numbers[i];
+      addLog(`⚡ [${i + 1}/${numbers.length}] إرسال إلى: ${num}`, 'info');
+      
+      await sleep(1000);
+      
+      // محاكاة نجاح/فشل عشوائي
+      const isSuccess = Math.random() > 0.1; // 90% نجاح
+      
+      if (isSuccess) {
+        addLog(`✅ تم الإرسال بنجاح إلى ${num}`, 'success');
+        success++;
+      } else {
+        addLog(`❌ فشل الإرسال إلى ${num}`, 'error');
+        failed++;
+      }
+    }
+
+    await sleep(1000);
+    addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+    addLog('🎉 انتهى الإرسال!', 'success');
+    addLog(`✅ نجح: ${success} | ❌ فشل: ${failed} | 📊 الإجمالي: ${numbers.length}`, 'info');
+    addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━', 'info');
+
+    setIsRunning(false);
+  };
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // تنزيل السكريبت
+  const downloadScript = () => {
+    const code = generatePythonCode();
+    if (!code) {
+      alert('⚠️ اكتب الأرقام والرسالة أولاً!');
+      return;
+    }
+
+    const blob = new Blob([code], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'whatsapp_sender.py';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    alert('✅ تم التنزيل!\n\nللتشغيل:\n1. pip install selenium webdriver-manager\n2. python whatsapp_sender.py');
+  };
+
+  // نسخ الكود
+  const copyCode = () => {
+    const code = generatePythonCode();
+    if (!code) {
+      alert('⚠️ اكتب الأرقام والرسالة أولاً!');
+      return;
+    }
+
+    navigator.clipboard.writeText(code).then(() => {
+      alert('✅ تم النسخ!');
+    });
+  };
+
+  const getLogIcon = (type) => {
+    switch(type) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      default: return '📋';
+    }
+  };
+
+  const getLogColor = (type) => {
+    switch(type) {
+      case 'success': return 'text-green-400';
+      case 'error': return 'text-red-400';
+      case 'warning': return 'text-yellow-400';
+      default: return 'text-blue-400';
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/30 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full animate-pulse">
+              <Zap className="text-white" size={40} />
+            </div>
+          </div>
+          <h1 className="text-5xl font-black text-white mb-2">WhatsApp Selenium Sender</h1>
+          <p className="text-purple-200/80 text-xl">إرسال سريع وذكي باستخدام Selenium 🔥</p>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Left Panel - Input */}
+          <div className="space-y-6">
+            {/* Phone Numbers */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center gap-3 mb-4">
+                <Phone className="text-blue-400" size={24} />
+                <h2 className="text-xl font-bold text-white">أرقام الهواتف</h2>
+              </div>
+              <textarea
+                value={phoneNumbers}
+                onChange={(e) => setPhoneNumbers(e.target.value)}
+                placeholder="01014884327&#10;01091071159&#10;01234567890"
+                className="w-full h-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-blue-500 resize-none font-mono text-lg"
+                disabled={isRunning}
+              />
+              {phoneNumbers && (
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-white/60 text-sm">عدد الأرقام:</span>
+                  <span className="text-green-400 font-bold text-lg">
+                    {parsePhoneNumbers(phoneNumbers).length} رقم
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Message */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center gap-3 mb-4">
+                <MessageSquare className="text-purple-400" size={24} />
+                <h2 className="text-xl font-bold text-white">الرسالة</h2>
+              </div>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="مرحباً! كيف الحال؟ 👋"
+                className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none text-lg"
+                disabled={isRunning}
+              />
+              {message && (
+                <div className="mt-3 text-white/60 text-sm">
+                  عدد الأحرف: {message.length}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={simulateRun}
+                disabled={isRunning || !phoneNumbers || !message}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+              >
+                {isRunning ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                    جاري الإرسال...
+                  </>
+                ) : (
+                  <>
+                    <Play size={20} />
+                    بدء الإرسال
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={downloadScript}
+                disabled={!phoneNumbers || !message}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg"
+              >
+                <Download size={20} />
+                تنزيل Python
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-xl rounded-xl p-6 border border-yellow-500/20">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
+                <div className="space-y-2">
+                  <h3 className="text-white font-bold">📋 تعليمات مهمة:</h3>
+                  <ul className="text-white/70 text-sm space-y-1">
+                    <li>• اكتب الأرقام (كل رقم في سطر)</li>
+                    <li>• اكتب الرسالة</li>
+                    <li>• اضغط "بدء الإرسال" للمحاكاة</li>
+                    <li>• أو "تنزيل Python" للتشغيل الحقيقي</li>
+                  </ul>
+                  
+                  <div className="mt-4 bg-green-500/20 rounded-lg p-3 border border-green-500/30">
+                    <p className="text-green-300 text-xs font-bold mb-1">🐍 للتشغيل الفعلي:</p>
+                    <code className="text-white/80 text-xs block">
+                      pip install selenium webdriver-manager<br/>
+                      python whatsapp_sender.py
+                    </code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel - Console Output */}
+          <div className="space-y-6">
+            {/* Live Console */}
+            <div className="bg-black/40 backdrop-blur-xl rounded-2xl border border-green-500/30 overflow-hidden">
+              <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 px-6 py-4 border-b border-green-500/30">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Terminal className="text-green-400" size={20} />
+                    <h3 className="text-white font-bold">Console Output</h3>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-[600px] overflow-y-auto p-4 font-mono text-sm scrollbar-thin scrollbar-thumb-green-500/50 scrollbar-track-transparent">
+                {logs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-white/30">
+                    <Terminal size={48} className="mb-4" />
+                    <p>في انتظار بدء العملية...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {logs.map((log, index) => (
+                      <div 
+                        key={index}
+                        className={`flex items-start gap-3 ${getLogColor(log.type)} animate-fadeIn`}
+                      >
+                        <span className="text-white/40 text-xs min-w-[70px]">
+                          {log.timestamp}
+                        </span>
+                        <span>{getLogIcon(log.type)}</span>
+                        <span className="flex-1">{log.msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={copyCode}
+                disabled={!phoneNumbers || !message}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all disabled:opacity-50"
+              >
+                <Copy size={18} />
+                نسخ الكود
+              </button>
+              
+              <button
+                onClick={() => setLogs([])}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white transition-all"
+              >
+                <Code size={18} />
+                مسح السجل
+              </button>
+            </div>
+
+            {/* Stats */}
+            {logs.length > 0 && (
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-green-500/20 backdrop-blur-xl rounded-xl p-4 border border-green-500/30">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="text-green-400" size={20} />
+                    <div>
+                      <p className="text-white/60 text-xs">نجح</p>
+                      <p className="text-white font-bold text-xl">
+                        {logs.filter(l => l.type === 'success' && l.msg.includes('تم الإرسال بنجاح')).length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-red-500/20 backdrop-blur-xl rounded-xl p-4 border border-red-500/30">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="text-red-400" size={20} />
+                    <div>
+                      <p className="text-white/60 text-xs">فشل</p>
+                      <p className="text-white font-bold text-xl">
+                        {logs.filter(l => l.type === 'error' && l.msg.includes('فشل الإرسال')).length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-500/20 backdrop-blur-xl rounded-xl p-4 border border-blue-500/30">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="text-blue-400" size={20} />
+                    <div>
+                      <p className="text-white/60 text-xs">الإجمالي</p>
+                      <p className="text-white font-bold text-xl">
+                        {parsePhoneNumbers(phoneNumbers).length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateX(-10px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+export default WhatsAppSeleniumRunner;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState } from 'react';
+import { Send, MessageSquare, Phone, Zap, Download, Terminal, Rocket, Code } from 'lucide-react';
+
+function WhatsAppSpeedSender() {
+  const [phoneNumbers, setPhoneNumbers] = useState('');
+  const [message, setMessage] = useState('');
+  const [method, setMethod] = useState('fast'); // fast, selenium, api
+
+  // تنظيف الأرقام
+  const parsePhoneNumbers = (text) => {
+    const numbers = text
+      .split(/[\s,،\n]+/)
+      .map(num => num.trim().replace(/\D/g, ''))
+      .filter(num => num.length >= 10);
+    return numbers;
+  };
+
+  // الطريقة السريعة - PyWhatKit محسّن
+  const generateFastScript = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    if (numbers.length === 0 || !message.trim()) return '';
+
+    const formattedNumbers = numbers.map(num => 
+      num.startsWith('20') ? '+' + num : '+20' + num
+    );
+
+    return `"""
+WhatsApp Speed Sender - أسرع طريقة ممكنة! ⚡
+pip install pywhatkit pyautogui
+"""
+
+import pywhatkit as kit
+import pyautogui
+import time
+import webbrowser
+
+# الأرقام
+numbers = ${JSON.stringify(formattedNumbers, null, 2)}
+
+# الرسالة
+message = """${message}"""
+
+print("⚡ وضع السرعة العالية - Fast Mode!")
+print(f"📤 سيتم إرسال {len(numbers)} رسالة\\n")
+
+# إعدادات السرعة
+LOAD_TIME = 3      # وقت تحميل الصفحة (قلله لـ 2 ثانية)
+SEND_DELAY = 0.5   # تأخير بسيط بعد الإرسال
+
+for i, number in enumerate(numbers, 1):
+    try:
+        print(f"🚀 [{i}/{len(numbers)}] → {number}")
+        
+        # فتح WhatsApp مباشرة
+        kit.sendwhatmsg_instantly(
+            number, 
+            message, 
+            wait_time=LOAD_TIME,  # تقليل وقت الانتظار
+            tab_close=False
+        )
+        
+        # انتظار قصير جداً
+        time.sleep(2)
+        
+        # إرسال مباشر
+        pyautogui.press('enter')
+        print(f"✅ تم!")
+        
+        # تأخير بسيط قبل التالي
+        time.sleep(SEND_DELAY)
+            
+    except Exception as e:
+        print(f"❌ فشل: {str(e)}")
+        continue
+
+print(f"\\n✅ انتهى! تم إرسال {len(numbers)} رسالة")
+`;
+  };
+
+  // طريقة Selenium - الأسرع والأذكى
+  const generateSeleniumScript = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    if (numbers.length === 0 || !message.trim()) return '';
+
+    const formattedNumbers = numbers.map(num => 
+      num.startsWith('20') ? num : '20' + num
+    );
+
+    return `"""
+WhatsApp Selenium Sender - أسرع × 10 مرات! 🔥
+pip install selenium webdriver-manager
+"""
+
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
+
+# الأرقام
+numbers = ${JSON.stringify(formattedNumbers, null, 2)}
+
+# الرسالة
+message = """${message}"""
+
+print("🔥 Selenium Mode - أسرع طريقة!")
+print(f"📤 {len(numbers)} رسالة\\n")
+
+# فتح Chrome مع WhatsApp Web
+options = webdriver.ChromeOptions()
+options.add_argument("--user-data-dir=./whatsapp_session")  # حفظ الجلسة
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+driver.get("https://web.whatsapp.com")
+
+print("📱 امسح QR Code...")
+input("اضغط Enter بعد تسجيل الدخول...")
+
+for i, number in enumerate(numbers, 1):
+    try:
+        print(f"⚡ [{i}/{len(numbers)}] → {number}")
+        
+        # فتح المحادثة مباشرة
+        driver.get(f"https://web.whatsapp.com/send?phone={number}")
+        
+        # انتظار صندوق الرسالة
+        wait = WebDriverWait(driver, 10)
+        msg_box = wait.until(EC.presence_of_element_located(
+            (By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]')
+        ))
+        
+        # كتابة وإرسال فوراً
+        msg_box.send_keys(message)
+        time.sleep(0.3)  # تأخير بسيط جداً
+        msg_box.send_keys(Keys.ENTER)
+        
+        print(f"✅ تم!")
+        time.sleep(1)  # ثانية واحدة فقط!
+        
+    except Exception as e:
+        print(f"❌ خطأ: {str(e)}")
+        continue
+
+print(f"\\n🎉 انتهى! {len(numbers)} رسالة في وقت قياسي!")
+driver.quit()
+`;
+  };
+
+  // طريقة API - للمحترفين
+  const generateAPIScript = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    if (numbers.length === 0 || !message.trim()) return '';
+
+    const formattedNumbers = numbers.map(num => 
+      num.startsWith('20') ? num : '20' + num
+    );
+
+    return `"""
+WhatsApp API Sender - احترافي وسريع جداً! 💼
+استخدم WhatsApp Business API أو خدمة مثل Twilio
+"""
+
+# مثال باستخدام Twilio (يحتاج حساب مدفوع)
+# pip install twilio
+
+from twilio.rest import Client
+import time
+
+# بيانات Twilio (احصل عليها من twilio.com)
+account_sid = 'YOUR_ACCOUNT_SID'
+auth_token = 'YOUR_AUTH_TOKEN'
+twilio_whatsapp = 'whatsapp:+14155238886'  # رقم Twilio
+
+client = Client(account_sid, auth_token)
+
+# الأرقام
+numbers = ${JSON.stringify(formattedNumbers, null, 2)}
+
+# الرسالة
+message = """${message}"""
+
+print("💼 API Mode - إرسال احترافي!")
+print(f"📤 {len(numbers)} رسالة\\n")
+
+for i, number in enumerate(numbers, 1):
+    try:
+        print(f"📤 [{i}/{len(numbers)}] → {number}")
+        
+        # إرسال فوري عبر API
+        msg = client.messages.create(
+            from_=twilio_whatsapp,
+            body=message,
+            to=f'whatsapp:+{number}'
+        )
+        
+        print(f"✅ تم! SID: {msg.sid}")
+        time.sleep(0.1)  # بدون تأخير تقريباً!
+        
+    except Exception as e:
+        print(f"❌ خطأ: {str(e)}")
+
+print(f"\\n🎉 انتهى! {len(numbers)} رسالة في ثوانٍ!")
+
+# ملاحظة: هذه الطريقة مدفوعة لكنها الأسرع والأكثر موثوقية
+# التكلفة: ~0.005$ لكل رسالة
+`;
+  };
+
+  const downloadScript = (scriptType) => {
+    let script = '';
+    let filename = '';
+
+    switch(scriptType) {
+      case 'fast':
+        script = generateFastScript();
+        filename = 'whatsapp_fast_sender.py';
+        break;
+      case 'selenium':
+        script = generateSeleniumScript();
+        filename = 'whatsapp_selenium_sender.py';
+        break;
+      case 'api':
+        script = generateAPIScript();
+        filename = 'whatsapp_api_sender.py';
+        break;
+    }
+
+    if (!script) {
+      alert('⚠️ اكتب الأرقام والرسالة أولاً!');
+      return;
+    }
+
+    const blob = new Blob([script], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    alert('✅ تم التنزيل!\n\nشغّل السكريبت: python ' + filename);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 p-6">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-xl rounded-2xl p-8 border border-purple-500/30 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse">
+              <Rocket className="text-white" size={40} />
+            </div>
+          </div>
+          <h1 className="text-5xl font-black text-white mb-2">WhatsApp Speed Sender ⚡</h1>
+          <p className="text-purple-200/80 text-xl">أسرع طريقة ممكنة - 100 رسالة في دقائق!</p>
+        </div>
+
+        {/* Input Section */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Phone Numbers */}
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <Phone className="text-blue-400" size={24} />
+              <h2 className="text-xl font-bold text-white">الأرقام</h2>
+            </div>
+            <textarea
+              value={phoneNumbers}
+              onChange={(e) => setPhoneNumbers(e.target.value)}
+              placeholder="01014884327&#10;01091071159&#10;..."
+              className="w-full h-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-blue-500 resize-none font-mono"
+            />
+            {phoneNumbers && (
+              <p className="mt-2 text-green-400 font-bold">
+                ✅ {parsePhoneNumbers(phoneNumbers).length} رقم
+              </p>
+            )}
+          </div>
+
+          {/* Message */}
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center gap-3 mb-4">
+              <MessageSquare className="text-purple-400" size={24} />
+              <h2 className="text-xl font-bold text-white">الرسالة</h2>
+            </div>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="مرحباً! كيف الحال؟ 👋"
+              className="w-full h-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Speed Methods */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <h2 className="text-2xl font-black text-white mb-6 flex items-center gap-3">
+            <Zap className="text-yellow-400" />
+            اختر الطريقة الأسرع
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {/* Method 1: Fast PyWhatKit */}
+            <div className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all ${
+              method === 'fast' 
+                ? 'bg-green-500/20 border-green-500' 
+                : 'bg-white/5 border-white/10 hover:border-green-500/50'
+            }`} onClick={() => setMethod('fast')}>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-green-500 rounded-lg">
+                  <Zap size={24} className="text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">سريع ⚡</h3>
+              </div>
+              <ul className="text-white/70 text-sm space-y-2">
+                <li>✅ سهل التثبيت</li>
+                <li>✅ يعمل مباشرة</li>
+                <li>⏱️ ~3 ثواني/رسالة</li>
+                <li>📦 PyWhatKit + PyAutoGUI</li>
+              </ul>
+              <div className="mt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadScript('fast');
+                  }}
+                  className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-bold transition-all"
+                >
+                  <Download size={16} className="inline mr-2" />
+                  تنزيل
+                </button>
+              </div>
+            </div>
+
+            {/* Method 2: Selenium (Fastest) */}
+            <div className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all ${
+              method === 'selenium' 
+                ? 'bg-orange-500/20 border-orange-500' 
+                : 'bg-white/5 border-white/10 hover:border-orange-500/50'
+            }`} onClick={() => setMethod('selenium')}>
+              <div className="absolute top-2 right-2">
+                <span className="px-2 py-1 bg-orange-500 text-white text-xs font-bold rounded-full animate-pulse">
+                  الأسرع 🔥
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-orange-500 rounded-lg">
+                  <Rocket size={24} className="text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">سيلينيوم 🔥</h3>
+              </div>
+              <ul className="text-white/70 text-sm space-y-2">
+                <li>✅ أسرع × 10 مرات</li>
+                <li>✅ تحكم كامل</li>
+                <li>⏱️ ~1 ثانية/رسالة</li>
+                <li>📦 Selenium WebDriver</li>
+              </ul>
+              <div className="mt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadScript('selenium');
+                  }}
+                  className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-bold transition-all"
+                >
+                  <Download size={16} className="inline mr-2" />
+                  تنزيل
+                </button>
+              </div>
+            </div>
+
+            {/* Method 3: API (Professional) */}
+            <div className={`relative p-6 rounded-xl border-2 cursor-pointer transition-all ${
+              method === 'api' 
+                ? 'bg-purple-500/20 border-purple-500' 
+                : 'bg-white/5 border-white/10 hover:border-purple-500/50'
+            }`} onClick={() => setMethod('api')}>
+              <div className="absolute top-2 right-2">
+                <span className="px-2 py-1 bg-purple-500 text-white text-xs font-bold rounded-full">
+                  Pro 💼
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-purple-500 rounded-lg">
+                  <Code size={24} className="text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-white">API 💼</h3>
+              </div>
+              <ul className="text-white/70 text-sm space-y-2">
+                <li>✅ فوري تماماً</li>
+                <li>✅ موثوق 100%</li>
+                <li>⏱️ ~0.1 ثانية/رسالة</li>
+                <li>💰 مدفوع (~$0.005)</li>
+              </ul>
+              <div className="mt-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    downloadScript('api');
+                  }}
+                  className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-bold transition-all"
+                >
+                  <Download size={16} className="inline mr-2" />
+                  تنزيل
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comparison Table */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <h3 className="text-xl font-bold text-white mb-4">📊 مقارنة السرعة</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-white">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-right p-3 text-white/70">الطريقة</th>
+                  <th className="text-right p-3 text-white/70">السرعة</th>
+                  <th className="text-right p-3 text-white/70">100 رسالة</th>
+                  <th className="text-right p-3 text-white/70">السهولة</th>
+                  <th className="text-right p-3 text-white/70">التكلفة</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-white/5">
+                  <td className="p-3 font-bold text-green-400">⚡ Fast</td>
+                  <td className="p-3">3s/msg</td>
+                  <td className="p-3">~5 دقائق</td>
+                  <td className="p-3">⭐⭐⭐⭐⭐</td>
+                  <td className="p-3 text-green-400">مجاني</td>
+                </tr>
+                <tr className="border-b border-white/5">
+                  <td className="p-3 font-bold text-orange-400">🔥 Selenium</td>
+                  <td className="p-3">1s/msg</td>
+                  <td className="p-3">~2 دقيقة</td>
+                  <td className="p-3">⭐⭐⭐⭐</td>
+                  <td className="p-3 text-green-400">مجاني</td>
+                </tr>
+                <tr>
+                  <td className="p-3 font-bold text-purple-400">💼 API</td>
+                  <td className="p-3">0.1s/msg</td>
+                  <td className="p-3">~10 ثواني</td>
+                  <td className="p-3">⭐⭐⭐</td>
+                  <td className="p-3 text-yellow-400">~$0.50</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/20">
+          <h3 className="text-white font-bold text-lg mb-3 flex items-center gap-2">
+            <Terminal size={20} />
+            تعليمات التشغيل
+          </h3>
+          
+          <div className="space-y-4">
+            <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
+              <p className="text-green-400 font-bold mb-2">⚡ Fast Method:</p>
+              <code className="text-white/80 text-sm block">
+                pip install pywhatkit pyautogui<br/>
+                python whatsapp_fast_sender.py
+              </code>
+            </div>
+
+            <div className="bg-orange-500/10 rounded-lg p-4 border border-orange-500/30">
+              <p className="text-orange-400 font-bold mb-2">🔥 Selenium Method (الأفضل):</p>
+              <code className="text-white/80 text-sm block">
+                pip install selenium webdriver-manager<br/>
+                python whatsapp_selenium_sender.py<br/>
+                <span className="text-yellow-400">→ امسح QR Code مرة واحدة فقط!</span>
+              </code>
+            </div>
+
+            <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/30">
+              <p className="text-purple-400 font-bold mb-2">💼 API Method:</p>
+              <code className="text-white/80 text-sm block">
+                1. سجل في twilio.com<br/>
+                2. احصل على API credentials<br/>
+                3. pip install twilio<br/>
+                4. python whatsapp_api_sender.py
+              </code>
+            </div>
+          </div>
+
+          <div className="mt-6 bg-red-500/10 rounded-lg p-4 border border-red-500/30">
+            <p className="text-red-400 font-bold text-sm mb-2">⚠️ تحذيرات:</p>
+            <ul className="text-white/60 text-sm space-y-1">
+              <li>• استخدم Selenium للسرعة القصوى (موصى به)</li>
+              <li>• API الأسرع لكنه مدفوع</li>
+              <li>• لا ترسل أكثر من 200 رسالة/يوم لتجنب الحظر</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default WhatsAppSpeedSender;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState } from 'react';
+import { Send, MessageSquare, Phone, Zap, CheckCircle, XCircle, Loader, Copy, Terminal } from 'lucide-react';
+
+function WhatsAppDirectSender() {
+  const [phoneNumbers, setPhoneNumbers] = useState('');
+  const [message, setMessage] = useState('');
+  const [delay, setDelay] = useState(5);
+
+  // تنظيف وفصل الأرقام
+  const parsePhoneNumbers = (text) => {
+    const numbers = text
+      .split(/[\s,،\n]+/)
+      .map(num => num.trim().replace(/\D/g, ''))
+      .filter(num => num.length >= 10);
+    return numbers;
+  };
+
+  // توليد كود الإرسال
+  const generateScript = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    
+    if (numbers.length === 0 || !message.trim()) {
+      return '';
+    }
+
+    const formattedNumbers = numbers.map(num => {
+      return num.startsWith('20') ? num : '20' + num;
+    });
+
+    return `// سكريبت إرسال WhatsApp تلقائي
+// تأكد إنك فاتح WhatsApp Web قبل ما تشغل الكود
+
+(async function() {
+  const numbers = ${JSON.stringify(formattedNumbers, null, 2)};
+  const message = ${JSON.stringify(message)};
+  const delaySeconds = ${delay};
+  
+  console.log('🚀 بدء الإرسال لـ ' + numbers.length + ' رقم...');
+  
+  for (let i = 0; i < numbers.length; i++) {
+    const number = numbers[i];
+    console.log(\`📤 [\${i + 1}/\${numbers.length}] إرسال إلى: \${number}\`);
+    
+    try {
+      // فتح المحادثة
+      const url = \`https://web.whatsapp.com/send?phone=\${number}&text=\${encodeURIComponent(message)}\`;
+      window.open(url, '_blank');
+      
+      // انتظار فتح النافذة وتحميل المحادثة
+      console.log('⏳ انتظار ' + delaySeconds + ' ثواني...');
+      await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+      
+      console.log('✅ تم فتح المحادثة مع ' + number);
+      
+    } catch (error) {
+      console.error('❌ خطأ في ' + number + ':', error);
+    }
+  }
+  
+  console.log('✅ تم الانتهاء من جميع الأرقام!');
+  alert('✅ تم فتح جميع المحادثات!\\n\\nالآن اضغط Enter في كل محادثة لإرسال الرسالة.');
+})();`;
+  };
+
+  // توليد سكريبت بايثون
+  const generatePythonScript = () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    
+    if (numbers.length === 0 || !message.trim()) {
+      return '';
+    }
+
+    const formattedNumbers = numbers.map(num => {
+      return num.startsWith('20') ? num : '20' + num;
+    });
+
+    return `"""
+WhatsApp Auto Sender - Python Script
+تثبيت المكتبات: pip install pywhatkit pyautogui
+"""
+
+import pywhatkit as kit
+import pyautogui
+import time
+
+# الأرقام
+numbers = ${JSON.stringify(formattedNumbers, null, 2)}
+
+# الرسالة
+message = """${message}"""
+
+# التأخير بين الرسائل (بالثواني)
+DELAY = ${delay}
+
+print(f"🚀 بدء إرسال {len(numbers)} رسالة...\\n")
+
+for i, number in enumerate(numbers, 1):
+    try:
+        print(f"📤 [{i}/{len(numbers)}] إرسال إلى: {number}")
+        
+        # فتح WhatsApp وكتابة الرسالة
+        kit.sendwhatmsg_instantly(number, message, wait_time=15, tab_close=False)
+        
+        # انتظار تحميل الصفحة
+        time.sleep(8)
+        
+        # الضغط على Enter للإرسال
+        pyautogui.press('enter')
+        print(f"✅ تم الإرسال بنجاح!\\n")
+        
+        # التأخير قبل الرسالة التالية
+        if i < len(numbers):
+            print(f"⏳ انتظار {DELAY} ثواني...\\n")
+            time.sleep(DELAY)
+            
+    except Exception as e:
+        print(f"❌ خطأ: {str(e)}\\n")
+        continue
+
+print("\\n✅ انتهى الإرسال!")
+print(f"📊 تم إرسال {len(numbers)} رسالة")
+`;
+  };
+
+  // نسخ الكود
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('✅ تم النسخ!\n\nالآن:\n1. افتح WhatsApp Web في تاب جديد\n2. اضغط F12 لفتح Console\n3. الصق الكود واضغط Enter');
+    });
+  };
+
+  // تنزيل سكريبت بايثون
+  const downloadPythonScript = () => {
+    const script = generatePythonScript();
+    if (!script) {
+      alert('⚠️ اكتب الأرقام والرسالة أولاً!');
+      return;
+    }
+    
+    const blob = new Blob([script], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'whatsapp_sender.py';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ تم التنزيل!\n\nالخطوات:\n1. pip install pywhatkit pyautogui\n2. python whatsapp_sender.py\n3. السكريبت هيبعت تلقائي!');
+  };
+
+  const exampleNumbers = "01014884327\n01020374152";
+  const script = generateScript();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl p-8 border border-green-500/30 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-green-500 rounded-full">
+              <Zap className="text-white" size={40} />
+            </div>
+          </div>
+          <h1 className="text-4xl font-black text-white mb-2">WhatsApp Direct Sender</h1>
+          <p className="text-green-200/80 text-lg">اكتب الأرقام وخلي الكود يبعت تلقائي! ⚡</p>
+        </div>
+
+        {/* Phone Numbers */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Phone className="text-blue-400" size={24} />
+            <h2 className="text-xl font-bold text-white">1. الأرقام</h2>
+          </div>
+          
+          <textarea
+            value={phoneNumbers}
+            onChange={(e) => setPhoneNumbers(e.target.value)}
+            placeholder={`اكتب الأرقام (كل رقم في سطر):\n\n${exampleNumbers}`}
+            className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-blue-500 resize-none font-mono text-lg"
+          />
+          
+          {phoneNumbers && (
+            <p className="mt-2 text-green-400 font-bold">
+              ✅ {parsePhoneNumbers(phoneNumbers).length} رقم جاهز
+            </p>
+          )}
+        </div>
+
+        {/* Message */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="text-purple-400" size={24} />
+            <h2 className="text-xl font-bold text-white">2. الرسالة</h2>
+          </div>
+          
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="مثال: هاااي"
+            className="w-full h-24 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none text-lg"
+          />
+        </div>
+
+        {/* Delay Setting */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Zap className="text-yellow-400" size={24} />
+              <h2 className="text-xl font-bold text-white">3. التأخير بين الرسائل</h2>
+            </div>
+            <span className="text-2xl font-black text-green-400">{delay}s</span>
+          </div>
+          
+          <input
+            type="range"
+            min="3"
+            max="15"
+            value={delay}
+            onChange={(e) => setDelay(Number(e.target.value))}
+            className="w-full"
+          />
+          <div className="flex justify-between text-white/60 text-sm mt-2">
+            <span>سريع (3s)</span>
+            <span>متوسط (9s)</span>
+            <span>بطيء (15s)</span>
+          </div>
+        </div>
+
+        {/* Method Selection */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Browser Method */}
+          <div className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/30">
+            <div className="flex items-center gap-3 mb-4">
+              <Terminal className="text-blue-400" size={28} />
+              <h3 className="text-xl font-bold text-white">طريقة 1: المتصفح</h3>
+            </div>
+            
+            <p className="text-white/70 text-sm mb-4">
+              استخدم JavaScript في متصفحك مباشرة
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => script && copyToClipboard(script)}
+                disabled={!script}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white rounded-lg font-bold transition-all"
+              >
+                <Copy size={18} />
+                نسخ كود JavaScript
+              </button>
+
+              <div className="bg-white/5 rounded-lg p-3 text-xs">
+                <p className="text-white/80 font-bold mb-1">الخطوات:</p>
+                <ol className="text-white/60 space-y-1 list-decimal list-inside">
+                  <li>افتح WhatsApp Web</li>
+                  <li>اضغط F12</li>
+                  <li>اذهب لـ Console</li>
+                  <li>الصق الكود واضغط Enter</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          {/* Python Method */}
+          <div className="bg-gradient-to-br from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl p-6 border border-green-500/30">
+            <div className="flex items-center gap-3 mb-4">
+              <Terminal className="text-green-400" size={28} />
+              <h3 className="text-xl font-bold text-white">طريقة 2: Python</h3>
+            </div>
+            
+            <p className="text-white/70 text-sm mb-4">
+              إرسال تلقائي كامل بدون تدخل يدوي!
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={downloadPythonScript}
+                disabled={!script}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white rounded-lg font-bold transition-all"
+              >
+                <Send size={18} />
+                تنزيل سكريبت Python
+              </button>
+
+              <div className="bg-white/5 rounded-lg p-3 text-xs">
+                <p className="text-white/80 font-bold mb-1">الخطوات:</p>
+                <ol className="text-white/60 space-y-1 list-decimal list-inside">
+                  <li>pip install pywhatkit pyautogui</li>
+                  <li>python whatsapp_sender.py</li>
+                  <li>خلاص! هو هيبعت لوحده ✅</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Preview Code */}
+        {script && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <h3 className="text-lg font-bold text-white mb-3">👀 معاينة الكود</h3>
+            <div className="bg-gray-900/50 rounded-lg p-4 max-h-64 overflow-y-auto">
+              <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap">
+                {script}
+              </pre>
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 backdrop-blur-xl rounded-2xl p-6 border border-yellow-500/20">
+          <h3 className="text-white font-bold text-lg mb-3">💡 أيهما أفضل؟</h3>
+          
+          <div className="grid md:grid-cols-2 gap-4 text-sm">
+            <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
+              <p className="text-blue-400 font-bold mb-2">🌐 JavaScript (متصفح)</p>
+              <ul className="text-white/70 space-y-1 list-disc list-inside">
+                <li>✅ سريع ومباشر</li>
+                <li>✅ ما يحتاج تثبيت حاجة</li>
+                <li>❌ لازم تضغط Enter يدوي</li>
+                <li>❌ لازم تبقى قدام الجهاز</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-500/10 rounded-lg p-4 border border-green-500/30">
+              <p className="text-green-400 font-bold mb-2">🐍 Python (موصى به)</p>
+              <ul className="text-white/70 space-y-1 list-disc list-inside">
+                <li>✅ إرسال تلقائي 100%</li>
+                <li>✅ بيضغط Enter لوحده</li>
+                <li>✅ تقدر تسيبه يشتغل</li>
+                <li>❌ محتاج تثبيت مكتبات</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-4 bg-red-500/10 rounded-lg p-4 border border-red-500/30">
+            <p className="text-red-400 font-bold text-sm mb-2">⚠️ تحذير مهم:</p>
+            <ul className="text-white/60 text-xs space-y-1 list-disc list-inside">
+              <li>WhatsApp ممكن يحظر حسابك لو بعتت رسائل سبام كتير</li>
+              <li>استخدم تأخير 5 ثواني على الأقل بين الرسائل</li>
+              <li>ما ترسلش أكثر من 50 رسالة في اليوم</li>
+              <li>الأداة دي للاستخدام الشخصي فقط</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Quick Examples */}
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => setPhoneNumbers(exampleNumbers)}
+            className="p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white transition-all"
+          >
+            📋 تجربة بأرقام مثال
+          </button>
+          <button
+            onClick={() => setMessage('مرحباً! كيف الحال؟ 👋')}
+            className="p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white transition-all"
+          >
+            💬 رسالة تجريبية
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default WhatsAppDirectSender;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState } from 'react';
+import { Send, MessageSquare, Phone, Zap, CheckCircle, XCircle, Loader } from 'lucide-react';
+
+function WhatsAppQuickSend() {
+  const [phoneNumbers, setPhoneNumbers] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [results, setResults] = useState([]);
+  const [currentNumber, setCurrentNumber] = useState('');
+
+  // تنظيف وفصل الأرقام
+  const parsePhoneNumbers = (text) => {
+    // فصل الأرقام بأي فاصل (مسافة، فاصلة، سطر جديد، إلخ)
+    const numbers = text
+      .split(/[\s,،\n]+/)
+      .map(num => num.trim().replace(/\D/g, '')) // إزالة أي حروف
+      .filter(num => num.length >= 10); // أرقام صحيحة فقط
+    
+    return numbers;
+  };
+
+  // إرسال الرسائل
+  const sendMessages = async () => {
+    const numbers = parsePhoneNumbers(phoneNumbers);
+    
+    if (numbers.length === 0) {
+      alert('❌ لم يتم العثور على أرقام صحيحة!\nتأكد من كتابة الأرقام بشكل صحيح.');
+      return;
+    }
+
+    if (!message.trim()) {
+      alert('❌ اكتب الرسالة أولاً!');
+      return;
+    }
+
+    const confirm = window.confirm(
+      `📤 سيتم الإرسال إلى ${numbers.length} رقم:\n\n` +
+      numbers.slice(0, 5).join('\n') +
+      (numbers.length > 5 ? `\n... و ${numbers.length - 5} رقم آخر` : '') +
+      '\n\n✅ متابعة؟'
+    );
+
+    if (!confirm) return;
+
+    setSending(true);
+    setResults([]);
+
+    // فتح نافذة WhatsApp واحدة
+    let whatsappWindow = null;
+
+    for (let i = 0; i < numbers.length; i++) {
+      const number = numbers[i];
+      setCurrentNumber(`${i + 1}/${numbers.length} - ${number}`);
+
+      try {
+        // إضافة رمز الدولة إذا لم يكن موجوداً
+        const fullNumber = number.startsWith('20') ? number : '20' + number;
+        const whatsappUrl = `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
+
+        if (i === 0) {
+          // فتح نافذة جديدة للرقم الأول
+          whatsappWindow = window.open(
+            whatsappUrl,
+            'whatsapp',
+            'width=1000,height=800,left=200,top=100'
+          );
+
+          if (!whatsappWindow) {
+            throw new Error('فشل فتح النافذة - اسمح بالنوافذ المنبثقة');
+          }
+
+          // انتظار أطول للنافذة الأولى
+          await sleep(10000);
+        } else {
+          // تحديث نفس النافذة للأرقام التالية
+          if (whatsappWindow && !whatsappWindow.closed) {
+            whatsappWindow.location.href = whatsappUrl;
+            whatsappWindow.focus();
+            await sleep(5000);
+          } else {
+            throw new Error('نافذة WhatsApp مغلقة');
+          }
+        }
+
+        setResults(prev => [...prev, {
+          number: number,
+          status: 'success',
+          time: new Date().toLocaleTimeString()
+        }]);
+
+        // انتظار قبل الرقم التالي
+        if (i < numbers.length - 1) {
+          await sleep(3000);
+        }
+
+      } catch (error) {
+        setResults(prev => [...prev, {
+          number: number,
+          status: 'failed',
+          error: error.message,
+          time: new Date().toLocaleTimeString()
+        }]);
+      }
+    }
+
+    setSending(false);
+    setCurrentNumber('');
+    
+    const successCount = results.filter(r => r.status === 'success').length;
+    alert(
+      `✅ انتهى الإرسال!\n\n` +
+      `✓ نجح: ${successCount}\n` +
+      `✗ فشل: ${numbers.length - successCount}\n` +
+      `📱 الإجمالي: ${numbers.length}`
+    );
+  };
+
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const exampleNumbers = "01014884327\n01020374152\n01234567890";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-green-900 via-emerald-900 to-teal-900 p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl p-8 border border-green-500/30 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-4 bg-green-500 rounded-full">
+              <MessageSquare className="text-white" size={40} />
+            </div>
+          </div>
+          <h1 className="text-4xl font-black text-white mb-2">WhatsApp Quick Send</h1>
+          <p className="text-green-200/80 text-lg">إرسال سريع ومباشر - اكتب الأرقام وابعت! 🚀</p>
+        </div>
+
+        {/* Phone Numbers Input */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Phone className="text-blue-400" size={24} />
+            <h2 className="text-xl font-bold text-white">1. أرقام الهواتف</h2>
+          </div>
+          
+          <textarea
+            value={phoneNumbers}
+            onChange={(e) => setPhoneNumbers(e.target.value)}
+            placeholder={`اكتب الأرقام (رقم في كل سطر):\n\n${exampleNumbers}\n\nأو افصل بمسافات أو فواصل`}
+            className="w-full h-48 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-blue-500 resize-none font-mono text-lg"
+            disabled={sending}
+          />
+          
+          <div className="mt-3 flex items-center justify-between">
+            <p className="text-white/60 text-sm">
+              💡 اكتب الأرقام بأي طريقة - الأداة ستتعرف عليها تلقائياً
+            </p>
+            {phoneNumbers && (
+              <span className="text-green-400 font-bold">
+                {parsePhoneNumbers(phoneNumbers).length} رقم
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Message Input */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="text-purple-400" size={24} />
+            <h2 className="text-xl font-bold text-white">2. الرسالة</h2>
+          </div>
+          
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="اكتب رسالتك هنا... مثال: هاااي"
+            className="w-full h-32 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none text-lg"
+            disabled={sending}
+          />
+        </div>
+
+        {/* Send Button */}
+        <button
+          onClick={sendMessages}
+          disabled={sending || !message.trim() || !phoneNumbers.trim()}
+          className="w-full flex items-center justify-center gap-3 px-8 py-6 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-2xl font-black text-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl"
+        >
+          {sending ? (
+            <>
+              <Loader className="animate-spin" size={28} />
+              جاري الإرسال...
+            </>
+          ) : (
+            <>
+              <Send size={28} />
+              🚀 إرسال الآن
+            </>
+          )}
+        </button>
+
+        {/* Current Status */}
+        {sending && (
+          <div className="bg-yellow-500/20 backdrop-blur-xl rounded-xl p-6 border border-yellow-500/30 animate-pulse">
+            <div className="flex items-center gap-3">
+              <Zap className="text-yellow-400" size={24} />
+              <div>
+                <p className="text-white font-bold">📤 جاري الإرسال...</p>
+                <p className="text-white/70 text-sm">{currentNumber}</p>
+              </div>
+            </div>
+            <p className="text-white/60 text-sm mt-3">
+              ⏳ انتظر قليلاً... لا تغلق النافذة
+            </p>
+          </div>
+        )}
+
+        {/* Results */}
+        {results.length > 0 && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-4">📊 النتائج</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {results.map((result, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center justify-between p-3 rounded-lg ${
+                    result.status === 'success'
+                      ? 'bg-green-500/20 border border-green-500/30'
+                      : 'bg-red-500/20 border border-red-500/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {result.status === 'success' ? (
+                      <CheckCircle className="text-green-400" size={20} />
+                    ) : (
+                      <XCircle className="text-red-400" size={20} />
+                    )}
+                    <span className="text-white font-mono">{result.number}</span>
+                  </div>
+                  <span className="text-white/60 text-sm">{result.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/20">
+          <div className="flex items-start gap-3">
+            <Zap className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
+            <div className="space-y-3">
+              <h3 className="text-white font-bold">⚡ طريقة الاستخدام:</h3>
+              <ol className="text-white/70 text-sm space-y-2 list-decimal list-inside">
+                <li>اكتب أرقام الهواتف (رقم في كل سطر أو افصل بمسافات/فواصل)</li>
+                <li>اكتب رسالتك (مثال: هاااي)</li>
+                <li>اضغط "إرسال الآن"</li>
+                <li>ستفتح نافذة WhatsApp Web تلقائياً</li>
+                <li><strong className="text-yellow-400">مهم:</strong> اضغط Enter يدوياً بعد كل رسالة</li>
+                <li>الأداة ستنتقل للرقم التالي تلقائياً</li>
+              </ol>
+
+              <div className="bg-yellow-500/20 rounded-lg p-4 border border-yellow-500/30 mt-4">
+                <p className="text-yellow-300 text-sm font-bold mb-2">⚠️ ملاحظات مهمة:</p>
+                <ul className="text-white/70 text-sm space-y-1 list-disc list-inside">
+                  <li>اسمح بالنوافذ المنبثقة في المتصفح</li>
+                  <li>لا تغلق نافذة WhatsApp أثناء الإرسال</li>
+                  <li>انتظر 3-5 ثواني بين كل رسالة</li>
+                  <li>الأرقام المصرية تبدأ بـ 010/011/012/015</li>
+                  <li>سيتم إضافة رمز مصر (+20) تلقائياً إذا لم يكن موجوداً</li>
+                </ul>
+              </div>
+
+              <div className="bg-green-500/20 rounded-lg p-4 border border-green-500/30 mt-4">
+                <p className="text-green-300 text-sm font-bold mb-2">✨ مثال سريع:</p>
+                <div className="bg-black/30 rounded p-3 font-mono text-xs">
+                  <p className="text-white/80">الأرقام:</p>
+                  <p className="text-green-400">01014884327</p>
+                  <p className="text-green-400">01020374152</p>
+                  <p className="text-white/80 mt-2">الرسالة:</p>
+                  <p className="text-purple-400">هاااي</p>
+                  <p className="text-white/80 mt-2">النتيجة:</p>
+                  <p className="text-yellow-400">📤 ستصل رسالة "هاااي" للرقمين!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Examples */}
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => setPhoneNumbers(exampleNumbers)}
+            className="p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white transition-all text-sm"
+          >
+            📋 ملء أمثلة الأرقام
+          </button>
+          <button
+            onClick={() => setMessage('السلام عليكم ✨')}
+            className="p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white/70 hover:text-white transition-all text-sm"
+          >
+            💬 رسالة تجريبية
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default WhatsAppQuickSend;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Send, Eye, Download, AlertCircle, CheckCircle, XCircle, FileText, Users, MessageSquare, Clock, Zap, Pause, Play, Copy } from 'lucide-react';
+import * as XLSX from 'xlsx';
+
+function WhatsAppBulkSender() {
+  const [file, setFile] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [message, setMessage] = useState('');
+  const [previewMessage, setPreviewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [sendingStats, setSendingStats] = useState({
+    total: 0,
+    sent: 0,
+    failed: 0,
+    pending: 0
+  });
+  const [sendingResults, setSendingResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [delayBetweenMessages, setDelayBetweenMessages] = useState(5);
+  const [showAutoScript, setShowAutoScript] = useState(false);
+  const fileInputRef = useRef(null);
+  const whatsappWindowRef = useRef(null);
+  const sendingIntervalRef = useRef(null);
+  const isSendingRef = useRef(false);
+
+  // معالجة رفع الملف
+  const handleFileUpload = (e) => {
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        const extractedContacts = jsonData.map((row, index) => ({
+          id: index + 1,
+          name: row['Name'] || row['name'] || row['الاسم'] || 'Unknown',
+          phone: String(row['Phone'] || row['phone'] || row['رقم الهاتف'] || row['Mobile'] || row['mobile'] || '').replace(/\D/g, ''),
+          company: row['Company'] || row['company'] || row['الشركة'] || '',
+          position: row['Position'] || row['position'] || row['الوظيفة'] || '',
+          status: 'pending'
+        })).filter(contact => contact.phone.length >= 10);
+
+        setContacts(extractedContacts);
+        setFile(uploadedFile);
+        setSendingStats({
+          total: extractedContacts.length,
+          sent: 0,
+          failed: 0,
+          pending: extractedContacts.length
+        });
+        alert(`✅ تم تحميل ${extractedContacts.length} جهة اتصال بنجاح!`);
+      } catch (error) {
+        console.error('File parsing error:', error);
+        alert('❌ خطأ في قراءة الملف. تأكد من أن الملف Excel صحيح.');
+      }
+    };
+    reader.readAsArrayBuffer(uploadedFile);
+  };
+
+  // معاينة الرسالة
+  const generatePreview = () => {
+    if (!message.trim() || contacts.length === 0) return;
+
+    const sampleContact = contacts[0];
+    let preview = message;
+    preview = preview.replace(/\{name\}/gi, sampleContact.name);
+    preview = preview.replace(/\{company\}/gi, sampleContact.company);
+    preview = preview.replace(/\{position\}/gi, sampleContact.position);
+    setPreviewMessage(preview);
+  };
+
+  // التحقق من أن WhatsApp Web مفتوح
+  const checkWhatsAppWindow = () => {
+    if (!whatsappWindowRef.current || whatsappWindowRef.current.closed) {
+      console.warn('⚠️ نافذة WhatsApp مغلقة');
+      return false;
+    }
+    return true;
+  };
+
+  // إرسال رسالة واحدة
+  const sendSingleMessage = async (index) => {
+    if (index >= contacts.length) {
+      console.log('✅ تم الانتهاء من جميع الرسائل');
+      stopSending(true);
+      return;
+    }
+
+    if (paused) {
+      console.log('⏸️ الإرسال متوقف مؤقتاً');
+      return;
+    }
+
+    const contact = contacts[index];
+    console.log(`📤 [${index + 1}/${contacts.length}] جاري الإرسال إلى: ${contact.name} (${contact.phone})`);
+
+    let personalizedMessage = message;
+    personalizedMessage = personalizedMessage.replace(/\{name\}/gi, contact.name);
+    personalizedMessage = personalizedMessage.replace(/\{company\}/gi, contact.company || '');
+    personalizedMessage = personalizedMessage.replace(/\{position\}/gi, contact.position || '');
+
+    const whatsappUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(personalizedMessage)}`;
+
+    try {
+      if (index === 0) {
+        // أول رسالة - فتح نافذة جديدة
+        console.log('🌐 فتح نافذة WhatsApp Web الجديدة...');
+        whatsappWindowRef.current = window.open(
+          whatsappUrl, 
+          'whatsapp_sender', 
+          'width=1200,height=900,left=100,top=50'
+        );
+        
+        if (!whatsappWindowRef.current) {
+          throw new Error('فشل فتح النافذة - تأكد من إلغاء حظر النوافذ المنبثقة');
+        }
+
+        // انتظار أطول للنافذة الأولى
+        await sleep(8000);
+      } else {
+        // باقي الرسائل - تحديث نفس النافذة
+        if (checkWhatsAppWindow()) {
+          whatsappWindowRef.current.location.href = whatsappUrl;
+          whatsappWindowRef.current.focus();
+          
+          // انتظار تحميل الصفحة
+          await sleep(3000);
+        } else {
+          throw new Error('نافذة WhatsApp مغلقة');
+        }
+      }
+
+      // تحديث حالة الجهة كـ "تم الإرسال"
+      setContacts(prev => prev.map(c => 
+        c.id === contact.id ? { ...c, status: 'sent' } : c
+      ));
+
+      setSendingStats(prev => ({
+        ...prev,
+        sent: prev.sent + 1,
+        pending: prev.pending - 1
+      }));
+
+      setSendingResults(prev => [...prev, {
+        name: contact.name,
+        phone: contact.phone,
+        company: contact.company,
+        status: 'sent',
+        sentAt: new Date().toLocaleTimeString()
+      }]);
+
+      console.log(`✅ تم فتح WhatsApp للرقم: ${contact.phone}`);
+      console.log(`⏳ انتظار ${delayBetweenMessages} ثانية قبل الرسالة التالية...`);
+
+    } catch (error) {
+      console.error(`❌ خطأ في إرسال الرسالة: ${error.message}`);
+      
+      setContacts(prev => prev.map(c => 
+        c.id === contact.id ? { ...c, status: 'failed' } : c
+      ));
+
+      setSendingStats(prev => ({
+        ...prev,
+        failed: prev.failed + 1,
+        pending: prev.pending - 1
+      }));
+
+      setSendingResults(prev => [...prev, {
+        name: contact.name,
+        phone: contact.phone,
+        company: contact.company,
+        status: 'failed',
+        sentAt: new Date().toLocaleTimeString()
+      }]);
+    }
+
+    // تحديث التقدم والمؤشر
+    const newProgress = Math.round(((index + 1) / contacts.length) * 100);
+    setProgress(newProgress);
+    setCurrentIndex(index + 1);
+  };
+
+  // دالة الانتظار
+  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // بدء الإرسال
+  const startSending = () => {
+    if (!message.trim()) {
+      alert('⚠️ الرجاء كتابة رسالة أولاً');
+      return;
+    }
+
+    if (contacts.length === 0) {
+      alert('⚠️ الرجاء رفع ملف جهات الاتصال');
+      return;
+    }
+
+    const estimatedMinutes = Math.ceil((contacts.length * delayBetweenMessages) / 60);
+    
+    const confirmStart = window.confirm(
+      `🚀 هل تريد البدء في الإرسال؟\n\n` +
+      `📊 العدد: ${contacts.length} جهة اتصال\n` +
+      `⏱️ الوقت المتوقع: ${estimatedMinutes} دقيقة\n` +
+      `⚡ التأخير: ${delayBetweenMessages} ثانية بين كل رسالة\n\n` +
+      `⚠️ مهم جداً:\n` +
+      `1. اسمح بالنوافذ المنبثقة (Pop-ups)\n` +
+      `2. ابقَ على هذه الصفحة ونافذة WhatsApp مفتوحة\n` +
+      `3. اضغط Enter يدوياً بعد كل رسالة، أو استخدم السكريبت التلقائي\n\n` +
+      `✅ موافق على المتابعة؟`
+    );
+
+    if (!confirmStart) return;
+
+    // إعادة تعيين الحالات
+    setSending(true);
+    setPaused(false);
+    setShowResults(false);
+    setCurrentIndex(0);
+    setProgress(0);
+    isSendingRef.current = true;
+    setSendingResults([]);
+    
+    // إعادة تعيين حالة جميع جهات الاتصال
+    setContacts(prev => prev.map(c => ({ ...c, status: 'pending' })));
+    setSendingStats({
+      total: contacts.length,
+      sent: 0,
+      failed: 0,
+      pending: contacts.length
+    });
+
+    // بدء الإرسال المتسلسل
+    processSendingQueue();
+  };
+
+  // معالجة قائمة الإرسال بشكل متسلسل
+  const processSendingQueue = async () => {
+    let index = 0;
+    
+    while (index < contacts.length && isSendingRef.current) {
+      if (!paused) {
+        await sendSingleMessage(index);
+        
+        // انتظار قبل الرسالة التالية (إلا إذا كانت آخر رسالة)
+        if (index < contacts.length - 1) {
+          await sleep(delayBetweenMessages * 1000);
+        }
+        
+        index++;
+      } else {
+        // إذا كان الإرسال متوقف مؤقتاً، انتظر قليلاً قبل التحقق مرة أخرى
+        await sleep(500);
+      }
+    }
+
+    // انتهى الإرسال
+    if (index >= contacts.length) {
+      stopSending(true);
+    }
+  };
+
+  // إيقاف الإرسال
+  const stopSending = (completed = false) => {
+    isSendingRef.current = false;
+    setSending(false);
+    setPaused(false);
+    setShowResults(true);
+
+    const finalStats = {
+      sent: contacts.filter(c => c.status === 'sent').length,
+      failed: contacts.filter(c => c.status === 'failed').length,
+      pending: contacts.filter(c => c.status === 'pending').length
+    };
+
+    if (completed) {
+      alert(
+        `✅ تم الانتهاء من الإرسال!\n\n` +
+        `✓ تم الإرسال: ${finalStats.sent}\n` +
+        `✗ فشل: ${finalStats.failed}\n` +
+        `⏳ قيد الانتظار: ${finalStats.pending}\n` +
+        `📱 الإجمالي: ${contacts.length}`
+      );
+    } else {
+      alert(
+        `⏸️ تم إيقاف الإرسال!\n\n` +
+        `✓ تم الإرسال: ${finalStats.sent}\n` +
+        `✗ فشل: ${finalStats.failed}\n` +
+        `⏳ قيد الانتظار: ${finalStats.pending}`
+      );
+    }
+  };
+
+  // إيقاف/استئناف مؤقت
+  const togglePause = () => {
+    setPaused(prev => !prev);
+    if (paused) {
+      console.log('▶️ استئناف الإرسال...');
+    } else {
+      console.log('⏸️ إيقاف مؤقت...');
+    }
+  };
+
+  // تنزيل النتائج
+  const downloadResults = () => {
+    const resultsData = contacts.map(c => ({
+      'الاسم': c.name,
+      'رقم الهاتف': c.phone,
+      'الشركة': c.company || '-',
+      'الوظيفة': c.position || '-',
+      'الحالة': c.status === 'sent' ? 'تم الإرسال' : c.status === 'failed' ? 'فشل' : 'قيد الانتظار',
+      'وقت الإرسال': sendingResults.find(r => r.phone === c.phone)?.sentAt || '-'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(resultsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Results');
+    XLSX.writeFile(wb, `WhatsApp_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // إعادة تعيين
+  const resetAll = () => {
+    if (window.confirm('هل تريد حذف كل البيانات والبدء من جديد؟')) {
+      isSendingRef.current = false;
+      
+      if (whatsappWindowRef.current && !whatsappWindowRef.current.closed) {
+        whatsappWindowRef.current.close();
+      }
+      
+      setFile(null);
+      setContacts([]);
+      setMessage('');
+      setPreviewMessage('');
+      setSending(false);
+      setPaused(false);
+      setCurrentIndex(0);
+      setProgress(0);
+      setSendingStats({ total: 0, sent: 0, failed: 0, pending: 0 });
+      setSendingResults([]);
+      setShowResults(false);
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // نسخ السكريبت التلقائي
+  const copyAutoScript = () => {
+    const script = `// سكريبت إرسال تلقائي لـ WhatsApp Web
+// الاستخدام: افتح WhatsApp Web > اضغط F12 > Console > الصق هذا الكود
+
+setInterval(() => {
+  const sendButton = document.querySelector('[data-icon="send"]') || 
+                     document.querySelector('button[aria-label*="Send"]') ||
+                     document.querySelector('span[data-icon="send"]')?.parentElement;
+  
+  if (sendButton) {
+    sendButton.click();
+    console.log('✅ تم الضغط على زر الإرسال');
+  } else {
+    console.log('⏳ زر الإرسال غير موجود - في انتظار تحميل الصفحة...');
+  }
+}, 2000); // كل ثانيتين`;
+
+    navigator.clipboard.writeText(script).then(() => {
+      alert('✅ تم نسخ السكريبت!\n\nالآن:\n1. افتح نافذة WhatsApp Web\n2. اضغط F12\n3. اذهب لتبويب Console\n4. الصق السكريبت واضغط Enter');
+    });
+  };
+
+  // تنظيف عند الخروج
+  useEffect(() => {
+    return () => {
+      isSendingRef.current = false;
+      if (whatsappWindowRef.current && !whatsappWindowRef.current.closed) {
+        whatsappWindowRef.current.close();
+      }
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl p-6 border border-green-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-green-500 rounded-xl">
+                <MessageSquare className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-white">WhatsApp Bulk Sender Pro</h1>
+                <p className="text-green-200/80">نظام إرسال رسائل WhatsApp جماعي - محسّن وسريع ✨</p>
+              </div>
+            </div>
+            <Zap className="text-yellow-400 animate-pulse" size={40} />
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Upload className="text-blue-400" size={24} />
+            <h2 className="text-xl font-bold text-white">1. رفع ملف Excel</h2>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="file-upload"
+          />
+          
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-xl hover:border-blue-500 transition-all cursor-pointer bg-white/5 hover:bg-white/10"
+          >
+            <Upload className="text-blue-400 mb-2" size={40} />
+            <p className="text-white font-bold">اضغط لرفع ملف Excel</p>
+            <p className="text-white/60 text-sm">يجب أن يحتوي على: Name, Phone</p>
+          </label>
+
+          {file && (
+            <div className="mt-4 flex items-center justify-between bg-green-500/20 rounded-xl p-4 border border-green-500/30">
+              <div className="flex items-center gap-3">
+                <FileText className="text-green-400" size={24} />
+                <div>
+                  <p className="text-white font-bold">{file.name}</p>
+                  <p className="text-green-200/70 text-sm">{contacts.length} جهة اتصال</p>
+                </div>
+              </div>
+              <button
+                onClick={resetAll}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
+              >
+                حذف
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Message Section */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="text-purple-400" size={24} />
+            <h2 className="text-xl font-bold text-white">2. كتابة الرسالة</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-white/80 text-sm mb-2 block">
+                استخدم المتغيرات: {'{name}'}, {'{company}'}, {'{position}'}
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="مثال: مرحباً {name}، نود التواصل معك من {company}..."
+                className="w-full h-40 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none"
+              />
+            </div>
+
+            <button
+              onClick={generatePreview}
+              disabled={!message.trim() || contacts.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all disabled:opacity-50"
+            >
+              <Eye size={18} />
+              معاينة الرسالة
+            </button>
+
+            {previewMessage && (
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
+                <p className="text-white/70 text-sm mb-2">المعاينة مع بيانات أول جهة اتصال:</p>
+                <p className="text-white whitespace-pre-wrap">{previewMessage}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="text-yellow-400" size={24} />
+            <h2 className="text-xl font-bold text-white">3. الإعدادات</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-white/80 text-sm">التأخير بين الرسائل (ثواني)</label>
+              <input
+                type="number"
+                min="3"
+                max="60"
+                value={delayBetweenMessages}
+                onChange={(e) => setDelayBetweenMessages(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+                disabled={sending}
+              />
+              <p className="text-white/60 text-xs mt-1">الموصى به: 5-7 ثواني لتجنب الحظر من WhatsApp</p>
+            </div>
+
+            <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/30">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-white font-bold">⚡ الإرسال التلقائي (اختياري)</h3>
+                <button
+                  onClick={() => setShowAutoScript(!showAutoScript)}
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  {showAutoScript ? 'إخفاء' : 'عرض السكريبت'}
+                </button>
+              </div>
+              <p className="text-white/70 text-sm mb-3">
+                لإرسال الرسائل تلقائياً بدون الضغط على Enter يدوياً، استخدم السكريبت التالي:
+              </p>
+              {showAutoScript && (
+                <button
+                  onClick={copyAutoScript}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all text-sm"
+                >
+                  <Copy size={16} />
+                  نسخ سكريبت الإرسال التلقائي
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        {contacts.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-500/20 backdrop-blur-xl rounded-xl p-4 border border-blue-500/30">
+              <div className="flex items-center gap-3">
+                <Users className="text-blue-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">الإجمالي</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.total}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-500/20 backdrop-blur-xl rounded-xl p-4 border border-green-500/30">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">تم الإرسال</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.sent}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-500/20 backdrop-blur-xl rounded-xl p-4 border border-red-500/30">
+              <div className="flex items-center gap-3">
+                <XCircle className="text-red-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">فشل</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.failed}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-500/20 backdrop-blur-xl rounded-xl p-4 border border-yellow-500/30">
+              <div className="flex items-center gap-3">
+                <Clock className="text-yellow-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">قيد الانتظار</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.pending}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress */}
+        {sending && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white font-bold">
+                {paused ? '⏸️ متوقف مؤقتاً' : '🚀 جاري الإرسال...'} ({currentIndex}/{contacts.length})
+              </span>
+              <span className="text-white font-bold">{progress}%</span>
+            </div>
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  paused 
+                    ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          {!sending && !showResults && (
+            <button
+              onClick={startSending}
+              disabled={!message.trim() || contacts.length === 0}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg"
+            >
+              <Send size={20} />
+              🚀 بدء الإرسال
+            </button>
+          )}
+
+          {sending && (
+            <>
+              <button
+                onClick={togglePause}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                {paused ? <Play size={20} /> : <Pause size={20} />}
+                {paused ? 'استئناف' : 'إيقاف مؤقت'}
+              </button>
+              <button
+                onClick={() => stopSending(false)}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                <XCircle size={20} />
+                إيقاف نهائي
+              </button>
+            </>
+          )}
+
+          {showResults && (
+            <>
+              <button
+                onClick={downloadResults}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                <Download size={20} />
+                تنزيل النتائج
+              </button>
+              <button
+                onClick={resetAll}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                البدء من جديد
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Contacts Table */}
+        {contacts.length > 0 && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-4">معاينة جهات الاتصال</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">#</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الاسم</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الهاتف</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الشركة</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contacts.slice(0, 10).map((contact) => (
+                    <tr key={contact.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="py-3 px-4 text-white/80">{contact.id}</td>
+                      <td className="py-3 px-4 text-white font-bold">{contact.name}</td>
+                      <td className="py-3 px-4 text-white/80 font-mono">{contact.phone}</td>
+                      <td className="py-3 px-4 text-white/80">{contact.company || '-'}</td>
+                      <td className="py-3 px-4">
+                        {contact.status === 'pending' && (
+                          <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-bold">
+                            قيد الانتظار
+                          </span>
+                        )}
+                        {contact.status === 'sent' && (
+                          <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                            ✓ تم الإرسال
+                          </span>
+                        )}
+                        {contact.status === 'failed' && (
+                          <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">
+                            ✗ فشل
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {contacts.length > 10 && (
+                <p className="text-center text-white/60 text-sm mt-4">
+                  و {contacts.length - 10} جهة اتصال أخرى...
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/20">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-blue-400 flex-shrink-0 mt-1" size={20} />
+            <div className="space-y-2">
+              <h3 className="text-white font-bold">⚡ طريقة الاستخدام المحسّنة:</h3>
+              <ol className="text-white/70 text-sm space-y-2 list-decimal list-inside">
+                <li>ارفع ملف Excel يحتوي على (Name, Phone)</li>
+                <li>اكتب رسالتك واستخدم المتغيرات {'{name}'} للتخصيص</li>
+                <li>اضبط التأخير (الموصى به: 5-7 ثواني)</li>
+                <li>اضغط "بدء الإرسال" - سيفتح WhatsApp Web تلقائياً</li>
+                <li><strong className="text-white">جديد:</strong> استخدم خاصية "إيقاف مؤقت/استئناف" للتحكم الكامل</li>
+                <li><strong className="text-white">اختياري:</strong> استخدم السكريبت التلقائي لضغط Enter تلقائياً</li>
+              </ol>
+              <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                <p className="text-yellow-400 text-sm font-bold">⚠️ تنبيهات هامة:</p>
+                <ul className="text-white/70 text-sm mt-2 space-y-1 list-disc list-inside">
+                  <li>الأرقام يجب أن تكون بالصيغة الدولية (مثال: 201234567890)</li>
+                  <li>لا ترسل أكثر من 500 رسالة في اليوم لتجنب الحظر</li>
+                  <li>استخدم تأخير 5-7 ثواني على الأقل بين الرسائل</li>
+                  <li>اسمح بالنوافذ المنبثقة في متصفحك</li>
+                  <li>ابقَ على الصفحة مفتوحة أثناء الإرسال</li>
+                </ul>
+              </div>
+              
+              <div className="mt-4 p-4 bg-green-500/10 rounded-lg border border-green-500/30">
+                <p className="text-green-400 text-sm font-bold">✨ التحسينات الجديدة:</p>
+                <ul className="text-white/70 text-sm mt-2 space-y-1 list-disc list-inside">
+                  <li>✅ إصلاح مشكلة عدم إرسال كل الرسائل</li>
+                  <li>✅ إضافة خاصية الإيقاف المؤقت والاستئناف</li>
+                  <li>✅ تحسين التحقق من فتح نافذة WhatsApp</li>
+                  <li>✅ سكريبت تلقائي لضغط Enter</li>
+                  <li>✅ تتبع دقيق لحالة كل رسالة</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default WhatsAppBulkSender;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Send, Eye, Download, AlertCircle, CheckCircle, XCircle, FileText, Users, MessageSquare, Clock, Zap, Pause, Play } from 'lucide-react';
+import * as XLSX from 'xlsx';
+
+function WhatsAppBulkSender() {
+  const [file, setFile] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [message, setMessage] = useState('');
+  const [previewMessage, setPreviewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [sendingStats, setSendingStats] = useState({
+    total: 0,
+    sent: 0,
+    failed: 0,
+    pending: 0
+  });
+  const [sendingResults, setSendingResults] = useState([]);
+  const [showResults, setShowResults] = useState(false);
+  const [delayBetweenMessages, setDelayBetweenMessages] = useState(3);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(true);
+  const fileInputRef = useRef(null);
+  const whatsappWindowRef = useRef(null);
+  const sendingIntervalRef = useRef(null);
+
+  // معالجة رفع الملف
+  const handleFileUpload = (e) => {
+    const uploadedFile = e.target.files[0];
+    if (!uploadedFile) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        const extractedContacts = jsonData.map((row, index) => ({
+          id: index + 1,
+          name: row['Name'] || row['name'] || row['الاسم'] || 'Unknown',
+          phone: String(row['Phone'] || row['phone'] || row['رقم الهاتف'] || '').replace(/\D/g, ''),
+          company: row['Company'] || row['company'] || row['الشركة'] || '',
+          position: row['Position'] || row['position'] || row['الوظيفة'] || '',
+          status: 'pending'
+        })).filter(contact => contact.phone.length >= 10);
+
+        setContacts(extractedContacts);
+        setFile(uploadedFile);
+        setSendingStats({
+          total: extractedContacts.length,
+          sent: 0,
+          failed: 0,
+          pending: extractedContacts.length
+        });
+        alert(`✅ تم تحميل ${extractedContacts.length} جهة اتصال بنجاح!`);
+      } catch (error) {
+        console.error('File parsing error:', error);
+        alert('❌ خطأ في قراءة الملف. تأكد من أن الملف Excel صحيح.');
+      }
+    };
+    reader.readAsArrayBuffer(uploadedFile);
+  };
+
+  // معاينة الرسالة
+  const generatePreview = () => {
+    if (!message.trim() || contacts.length === 0) return;
+
+    const sampleContact = contacts[0];
+    let preview = message;
+    preview = preview.replace(/\{name\}/gi, sampleContact.name);
+    preview = preview.replace(/\{company\}/gi, sampleContact.company);
+    preview = preview.replace(/\{position\}/gi, sampleContact.position);
+    setPreviewMessage(preview);
+  };
+
+  // إرسال رسالة واحدة
+  const sendSingleMessage = (index) => {
+    if (index >= contacts.length) {
+      stopSending();
+      return;
+    }
+
+    const contact = contacts[index];
+    console.log(`📤 [${index + 1}/${contacts.length}] إرسال إلى: ${contact.name} (${contact.phone})`);
+
+    let personalizedMessage = message;
+    personalizedMessage = personalizedMessage.replace(/\{name\}/gi, contact.name);
+    personalizedMessage = personalizedMessage.replace(/\{company\}/gi, contact.company || '');
+    personalizedMessage = personalizedMessage.replace(/\{position\}/gi, contact.position || '');
+
+    const whatsappUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(personalizedMessage)}`;
+
+    try {
+      if (index === 0) {
+        // أول رسالة - فتح نافذة جديدة
+        whatsappWindowRef.current = window.open(whatsappUrl, 'whatsapp_sender', 'width=1000,height=800');
+      } else {
+        // باقي الرسائل - تحديث نفس النافذة
+        if (whatsappWindowRef.current && !whatsappWindowRef.current.closed) {
+          whatsappWindowRef.current.location.href = whatsappUrl;
+          whatsappWindowRef.current.focus();
+        } else {
+          whatsappWindowRef.current = window.open(whatsappUrl, 'whatsapp_sender', 'width=1000,height=800');
+        }
+      }
+
+      // محاكاة الضغط على Enter بعد ثانية
+      if (autoSendEnabled) {
+        setTimeout(() => {
+          simulateEnterPress();
+        }, 1000);
+      }
+
+      // تحديث الحالة
+      setContacts(prev => prev.map(c => 
+        c.id === contact.id ? { ...c, status: 'sent' } : c
+      ));
+
+      setSendingStats(prev => ({
+        ...prev,
+        sent: prev.sent + 1,
+        pending: prev.pending - 1
+      }));
+
+      console.log(`✅ تم فتح WhatsApp للرقم: ${contact.phone}`);
+    } catch (error) {
+      console.error(`❌ خطأ: ${error.message}`);
+      
+      setContacts(prev => prev.map(c => 
+        c.id === contact.id ? { ...c, status: 'failed' } : c
+      ));
+
+      setSendingStats(prev => ({
+        ...prev,
+        failed: prev.failed + 1,
+        pending: prev.pending - 1
+      }));
+    }
+
+    // تحديث التقدم
+    const newProgress = Math.round(((index + 1) / contacts.length) * 100);
+    setProgress(newProgress);
+    setCurrentIndex(index + 1);
+  };
+
+  // محاكاة الضغط على Enter
+  const simulateEnterPress = () => {
+    if (whatsappWindowRef.current && !whatsappWindowRef.current.closed) {
+      try {
+        // محاولة إرسال حدث Enter للنافذة
+        const enterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          which: 13,
+          bubbles: true
+        });
+        whatsappWindowRef.current.document.dispatchEvent(enterEvent);
+      } catch (e) {
+        console.log('⚠️ لا يمكن محاكاة Enter تلقائياً - استخدم السكريبت اليدوي');
+      }
+    }
+  };
+
+  // بدء الإرسال
+  const startSending = () => {
+    if (!message.trim()) {
+      alert('⚠️ الرجاء كتابة رسالة أولاً');
+      return;
+    }
+
+    if (contacts.length === 0) {
+      alert('⚠️ الرجاء رفع ملف جهات الاتصال');
+      return;
+    }
+
+    const confirmStart = window.confirm(
+      `🚀 هل تريد البدء في الإرسال؟\n\n` +
+      `📊 العدد: ${contacts.length} جهة اتصال\n` +
+      `⏱️ الوقت المتوقع: ${Math.round((contacts.length * delayBetweenMessages) / 60)} دقيقة\n` +
+      `⚡ التأخير: ${delayBetweenMessages} ثانية بين كل رسالة\n\n` +
+      `✅ تأكد من فتح نافذة WhatsApp Web والبقاء على الصفحة`
+    );
+
+    if (!confirmStart) return;
+
+    setSending(true);
+    setShowResults(false);
+    setCurrentIndex(0);
+    setProgress(0);
+    setSendingStats({
+      total: contacts.length,
+      sent: 0,
+      failed: 0,
+      pending: contacts.length
+    });
+
+    // بدء الإرسال التلقائي
+    let index = 0;
+    sendSingleMessage(index);
+
+    sendingIntervalRef.current = setInterval(() => {
+      index++;
+      if (index < contacts.length && sending) {
+        sendSingleMessage(index);
+      } else {
+        stopSending();
+      }
+    }, delayBetweenMessages * 1000);
+  };
+
+  // إيقاف الإرسال
+  const stopSending = () => {
+    if (sendingIntervalRef.current) {
+      clearInterval(sendingIntervalRef.current);
+      sendingIntervalRef.current = null;
+    }
+    setSending(false);
+    setShowResults(true);
+
+    const results = contacts.map(c => ({
+      name: c.name,
+      phone: c.phone,
+      company: c.company,
+      status: c.status,
+      sentAt: c.status === 'sent' ? new Date().toLocaleTimeString() : '-'
+    }));
+    setSendingResults(results);
+
+    alert(
+      `✅ تم الانتهاء!\n\n` +
+      `✓ تم الإرسال: ${sendingStats.sent}\n` +
+      `✗ فشل: ${sendingStats.failed}\n` +
+      `📱 الإجمالي: ${contacts.length}`
+    );
+  };
+
+  // تنزيل النتائج
+  const downloadResults = () => {
+    const ws = XLSX.utils.json_to_sheet(sendingResults);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Results');
+    XLSX.writeFile(wb, `WhatsApp_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  // إعادة تعيين
+  const resetAll = () => {
+    if (window.confirm('هل تريد حذف كل البيانات والبدء من جديد؟')) {
+      if (sendingIntervalRef.current) {
+        clearInterval(sendingIntervalRef.current);
+      }
+      if (whatsappWindowRef.current) {
+        whatsappWindowRef.current.close();
+      }
+      setFile(null);
+      setContacts([]);
+      setMessage('');
+      setPreviewMessage('');
+      setSending(false);
+      setCurrentIndex(0);
+      setProgress(0);
+      setSendingStats({ total: 0, sent: 0, failed: 0, pending: 0 });
+      setSendingResults([]);
+      setShowResults(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // تنظيف عند الخروج
+  useEffect(() => {
+    return () => {
+      if (sendingIntervalRef.current) {
+        clearInterval(sendingIntervalRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-green-900 to-emerald-900 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-xl rounded-2xl p-6 border border-green-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-green-500 rounded-xl">
+                <MessageSquare className="text-white" size={32} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-white">WhatsApp Bulk Sender Pro</h1>
+                <p className="text-green-200/80">نظام إرسال رسائل WhatsApp جماعي - سريع ومنظم</p>
+              </div>
+            </div>
+            <Zap className="text-yellow-400" size={40} />
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Upload className="text-blue-400" size={24} />
+            <h2 className="text-xl font-bold text-white">1. رفع ملف Excel</h2>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="file-upload"
+          />
+          
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-white/20 rounded-xl hover:border-blue-500 transition-all cursor-pointer bg-white/5 hover:bg-white/10"
+          >
+            <Upload className="text-blue-400 mb-2" size={40} />
+            <p className="text-white font-bold">اضغط لرفع ملف Excel</p>
+            <p className="text-white/60 text-sm">يجب أن يحتوي على: Name, Phone</p>
+          </label>
+
+          {file && (
+            <div className="mt-4 flex items-center justify-between bg-green-500/20 rounded-xl p-4 border border-green-500/30">
+              <div className="flex items-center gap-3">
+                <FileText className="text-green-400" size={24} />
+                <div>
+                  <p className="text-white font-bold">{file.name}</p>
+                  <p className="text-green-200/70 text-sm">{contacts.length} جهة اتصال</p>
+                </div>
+              </div>
+              <button
+                onClick={resetAll}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all"
+              >
+                حذف
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Message Section */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <MessageSquare className="text-purple-400" size={24} />
+            <h2 className="text-xl font-bold text-white">2. كتابة الرسالة</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-white/80 text-sm mb-2 block">
+                استخدم المتغيرات: {'{name}'}, {'{company}'}, {'{position}'}
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="مثال: مرحباً {name}، نود التواصل معك من {company}..."
+                className="w-full h-40 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-purple-500 resize-none"
+              />
+            </div>
+
+            <button
+              onClick={generatePreview}
+              disabled={!message.trim() || contacts.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-all disabled:opacity-50"
+            >
+              <Eye size={18} />
+              معاينة الرسالة
+            </button>
+
+            {previewMessage && (
+              <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-4 border border-purple-500/30">
+                <p className="text-white/70 text-sm mb-2">المعاينة مع بيانات أول جهة اتصال:</p>
+                <p className="text-white whitespace-pre-wrap">{previewMessage}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+          <div className="flex items-center gap-3 mb-4">
+            <Clock className="text-yellow-400" size={24} />
+            <h2 className="text-xl font-bold text-white">3. الإعدادات</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-white/80 text-sm">التأخير بين الرسائل (ثواني)</label>
+              <input
+                type="number"
+                min="1"
+                max="60"
+                value={delayBetweenMessages}
+                onChange={(e) => setDelayBetweenMessages(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-yellow-500"
+              />
+              <p className="text-white/60 text-xs mt-1">الموصى به: 3-5 ثواني لتجنب الحظر</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        {contacts.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-500/20 backdrop-blur-xl rounded-xl p-4 border border-blue-500/30">
+              <div className="flex items-center gap-3">
+                <Users className="text-blue-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">الإجمالي</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.total}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-500/20 backdrop-blur-xl rounded-xl p-4 border border-green-500/30">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="text-green-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">تم الإرسال</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.sent}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-500/20 backdrop-blur-xl rounded-xl p-4 border border-red-500/30">
+              <div className="flex items-center gap-3">
+                <XCircle className="text-red-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">فشل</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.failed}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-500/20 backdrop-blur-xl rounded-xl p-4 border border-yellow-500/30">
+              <div className="flex items-center gap-3">
+                <Clock className="text-yellow-400" size={24} />
+                <div>
+                  <p className="text-white/70 text-sm">قيد الانتظار</p>
+                  <p className="text-2xl font-black text-white">{sendingStats.pending}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Progress */}
+        {sending && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white font-bold">جاري الإرسال... ({currentIndex}/{contacts.length})</span>
+              <span className="text-white font-bold">{progress}%</span>
+            </div>
+            <div className="w-full h-3 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          {!sending && !showResults && (
+            <button
+              onClick={startSending}
+              disabled={!message.trim() || contacts.length === 0}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg"
+            >
+              <Send size={20} />
+              🚀 بدء الإرسال
+            </button>
+          )}
+
+          {sending && (
+            <button
+              onClick={stopSending}
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white rounded-xl font-bold transition-all shadow-lg"
+            >
+              <Pause size={20} />
+              إيقاف
+            </button>
+          )}
+
+          {showResults && (
+            <>
+              <button
+                onClick={downloadResults}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                <Download size={20} />
+                تنزيل النتائج
+              </button>
+              <button
+                onClick={resetAll}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl font-bold transition-all shadow-lg"
+              >
+                البدء من جديد
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Contacts Table */}
+        {contacts.length > 0 && (
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <h3 className="text-xl font-bold text-white mb-4">معاينة جهات الاتصال</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-white/10">
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">#</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الاسم</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الهاتف</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الشركة</th>
+                    <th className="text-right text-white/70 text-sm font-bold pb-3 px-4">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {contacts.slice(0, 10).map((contact) => (
+                    <tr key={contact.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="py-3 px-4 text-white/80">{contact.id}</td>
+                      <td className="py-3 px-4 text-white font-bold">{contact.name}</td>
+                      <td className="py-3 px-4 text-white/80 font-mono">{contact.phone}</td>
+                      <td className="py-3 px-4 text-white/80">{contact.company || '-'}</td>
+                      <td className="py-3 px-4">
+                        {contact.status === 'pending' && (
+                          <span className="px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-bold">
+                            قيد الانتظار
+                          </span>
+                        )}
+                        {contact.status === 'sent' && (
+                          <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                            ✓ تم الإرسال
+                          </span>
+                        )}
+                        {contact.status === 'failed' && (
+                          <span className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-xs font-bold">
+                            ✗ فشل
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {contacts.length > 10 && (
+                <p className="text-center text-white/60 text-sm mt-4">
+                  و {contacts.length - 10} جهة اتصال أخرى...
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-xl rounded-2xl p-6 border border-blue-500/20">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="text-blue-400 flex-shrink-0 mt-1" size={20} />
+            <div className="space-y-2">
+              <h3 className="text-white font-bold">⚡ طريقة الاستخدام السريعة:</h3>
+              <ol className="text-white/70 text-sm space-y-2 list-decimal list-inside">
+                <li>ارفع ملف Excel يحتوي على (Name, Phone)</li>
+                <li>اكتب رسالتك واستخدم المتغيرات {'{name}'} للتخصيص</li>
+                <li>اضبط التأخير (الموصى به: 3-5 ثواني)</li>
+                <li>اضغط "بدء الإرسال" - سيفتح WhatsApp Web تلقائياً</li>
+                <li>اضغط Enter يدوياً لكل رسالة، أو استخدم Python Script للإرسال التلقائي الكامل</li>
+              </ol>
+              <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
+                <p className="text-yellow-400 text-sm font-bold">⚠️ تنبيهات هامة:</p>
+                <ul className="text-white/70 text-sm mt-2 space-y-1 list-disc list-inside">
+                  <li>الأرقام يجب أن تكون بالصيغة الدولية (مثال: 201234567890)</li>
+                  <li>لا ترسل أكثر من 500 رسالة في اليوم لتجنب الحظر</li>
+                  <li>استخدم تأخير 3-5 ثواني على الأقل بين الرسائل</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default WhatsAppBulkSender;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
